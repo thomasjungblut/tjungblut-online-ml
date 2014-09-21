@@ -16,8 +16,8 @@ public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
 
   protected final StochasticMinimizer minimizer;
 
-  protected Random random;
-  protected int numPasses;
+  protected Random random = new Random();
+  protected int numPasses = 1;
 
   public AbstractMinimizingOnlineLearner(StochasticMinimizer minimizer) {
     this.minimizer = minimizer;
