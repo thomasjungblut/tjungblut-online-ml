@@ -3,9 +3,30 @@ tjungblut-online-ml
 
 This is my online machine learning library. Over the next few months I will put some algorithms from my main common library into a streaming fashion and move them into this repository.
 
-Everything will be built upon the Java 8 streams and the algorithms are specifically designed to make use of the streams feature.
+Everything will be built upon the Java 8 streams and the algorithms are specifically designed to make use of the streams feature, also I aim scale this library vertically by using parallel streams wherever possible.
 
 This is not a distributed system, but its parts can be reused with any MapReduce or BSP implementation (e.g. Hadoop MR/Hama BSP), making it horizontally scalable for terabyte/petabyte datasets as well.
+
+For the future, I also want to support infinite streams where the training can be done asynchronously with using the model.
+
+Supported Algorithms
+===================
+
+- [x] Multinomial Naive Bayes
+ - [ ] Complement Naive Bayes
+- [x] Stochastic Gradient Descent 
+ - [x] logistic regression
+ - [x] linear regression (e.g. least squares)
+ - [ ] MaxEnt, which I didn't test yet
+ - [ ] MaxEnt Markov Models
+ - [ ] Ridge Regression
+ - [ ] Lasso
+ - [ ] CG Support
+ - [ ] Adagrad
+- [ ] Multilayer Perceptron
+- [ ] RBM
+- [ ] KNN
+- [ ] Canopy Clustering
 
 Sample Usage
 ===================
@@ -23,7 +44,7 @@ StochasticGradientDescent min = StochasticGradientDescentBuilder.create(0.1).bui
 List<FeatureOutcomePair> data = generateData();
 
 RegressionLearner learner = new RegressionLearner(min, new SigmoidActivationFunction(), new LogisticErrorFunction());
-// do 5 passes over all data in a stream
+// do 5 passes over all data in a stream, the default is 1
 learner.setNumPasses(5);
 
 // train the model by supplying the stream
