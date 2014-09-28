@@ -40,21 +40,38 @@ public class TestRegressionLearner {
 
     // for both classes
     for (int i = 0; i <= 1; i++) {
-      // 0.1 steps between zero and 1
-      for (double d = 0.0; d <= 1.0; d += 0.1) {
-        DoubleVector weights = new DenseDoubleVector(new double[] { d, d });
+      gridGradCheck(learner, i);
+    }
+  }
 
-        DoubleVector nextFeature = new DenseDoubleVector(new double[] { 1, 10 });
-        DoubleVector nextOutcome = new DenseDoubleVector(new double[] { i });
-        DoubleVector numGrad = MathUtils.numericalGradient(weights,
-            (x) -> learner.observeExample(new FeatureOutcomePair(nextFeature,
-                nextOutcome), x));
+  @Test
+  public void ridgeGradCheck() {
+    RegressionLearner learner = new RegressionLearner(
+        StochasticGradientDescentBuilder.create(0.1).build(),
+        new SigmoidActivationFunction(), new LogisticErrorFunction(), 1d);
+    learner.setRandom(new Random(0));
 
-        CostGradientTuple realGrad = learner.observeExample(
-            new FeatureOutcomePair(nextFeature, nextOutcome), weights);
-        Assert.assertArrayEquals(numGrad.toArray(), realGrad.getGradient()
-            .toArray(), 1e-4);
-      }
+    // for both classes
+    for (int i = 0; i <= 1; i++) {
+      gridGradCheck(learner, i);
+    }
+  }
+
+  public void gridGradCheck(RegressionLearner learner, int clz) {
+    // 0.1 steps between zero and 1
+    for (double d = 0.0; d <= 1.0; d += 0.1) {
+      DoubleVector weights = new DenseDoubleVector(new double[] { d, d });
+
+      DoubleVector nextFeature = new DenseDoubleVector(new double[] { 1, 10 });
+      DoubleVector nextOutcome = new DenseDoubleVector(new double[] { clz });
+      DoubleVector numGrad = MathUtils.numericalGradient(weights,
+          (x) -> learner.observeExample(new FeatureOutcomePair(nextFeature,
+              nextOutcome), x));
+
+      CostGradientTuple realGrad = learner.observeExample(
+          new FeatureOutcomePair(nextFeature, nextOutcome), weights);
+      Assert.assertArrayEquals(numGrad.toArray(), realGrad.getGradient()
+          .toArray(), 1e-4);
     }
   }
 
@@ -69,7 +86,21 @@ public class TestRegressionLearner {
         1.178953822695672, 2.0180958310781554 }, model.getWeights().toArray(),
         1e-4);
     double acc = computeClassificationAccuracy(generateData(), model);
-    Assert.assertEquals(1d, acc, 1e-3);
+    Assert.assertEquals(1d, acc, 0.1);
+  }
+
+  @Test
+  public void testRidgeLogisticRegression() {
+    List<FeatureOutcomePair> data = generateData();
+
+    RegressionLearner learner = newLearner(1d);
+
+    RegressionModel model = learner.train(() -> data.stream());
+    Assert.assertArrayEquals(new double[] { -303.87207930601994,
+        4.692174180873811, 2.318255015286687 }, model.getWeights().toArray(),
+        1e-4);
+    double acc = computeClassificationAccuracy(generateData(), model);
+    Assert.assertEquals(1d, acc, 0.1);
   }
 
   @Test
@@ -81,14 +112,18 @@ public class TestRegressionLearner {
     // is no defined order of updates, thus we only assert the accuracy.
     RegressionModel model = learner.train(() -> data.stream().parallel());
     double acc = computeClassificationAccuracy(generateData(), model);
-    Assert.assertEquals(1d, acc, 1e-3);
+    Assert.assertEquals(1d, acc, 0.1);
   }
 
   public RegressionLearner newLearner() {
+    return newLearner(0d);
+  }
+
+  public RegressionLearner newLearner(double lambda) {
     StochasticGradientDescent min = StochasticGradientDescentBuilder
         .create(0.1).build();
     RegressionLearner learner = new RegressionLearner(min,
-        new SigmoidActivationFunction(), new LogisticErrorFunction());
+        new SigmoidActivationFunction(), new LogisticErrorFunction(), lambda);
     learner.setRandom(new Random(1337));
     learner.setNumPasses(25);
     return learner;

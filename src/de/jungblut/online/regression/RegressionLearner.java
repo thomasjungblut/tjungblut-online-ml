@@ -24,14 +24,24 @@ public class RegressionLearner extends
 
   private final ActivationFunction activationFunction;
   private final ErrorFunction lossFunction;
+  private final double lambda;
 
   public RegressionLearner(StochasticMinimizer minimizer,
-      ActivationFunction activationFunction, ErrorFunction lossFunction) {
+      ActivationFunction activationFunction, ErrorFunction lossFunction,
+      double ridge) {
     super(minimizer);
     this.activationFunction = Preconditions.checkNotNull(activationFunction,
         "activation function");
     this.lossFunction = Preconditions.checkNotNull(lossFunction,
         "loss function");
+    Preconditions.checkArgument(ridge >= 0, "Given ridge lambda was negative: "
+        + ridge);
+    this.lambda = ridge;
+  }
+
+  public RegressionLearner(StochasticMinimizer minimizer,
+      ActivationFunction activationFunction, ErrorFunction lossFunction) {
+    this(minimizer, activationFunction, lossFunction, 0d);
   }
 
   @Override
@@ -42,6 +52,18 @@ public class RegressionLearner extends
     double cost = lossFunction.calculateError(next.getOutcome(), hypothesis);
     double diff = hypothesis.subtract(next.getOutcome()).sum();
     DoubleVector gradient = next.getFeature().multiply(diff);
+
+    if (lambda != 0d) {
+      boolean bias = next.getFeature().get(0) == 1d;
+      DoubleVector powered = weights.pow(2d);
+      DoubleVector regGrad = weights.multiply(lambda);
+      if (bias) {
+        powered.set(0, 0);
+        regGrad.set(0, 0);
+      }
+      cost += lambda * powered.sum() / 2d;
+      gradient = gradient.add(regGrad);
+    }
 
     return new CostGradientTuple(cost, gradient);
   }

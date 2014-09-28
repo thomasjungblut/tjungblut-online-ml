@@ -16,11 +16,12 @@ Supported Algorithms
  - [ ] Complement Naive Bayes
 - [x] Stochastic Gradient Descent 
  - [x] logistic regression
- - [x] linear regression (e.g. least squares)
- - [ ] MaxEnt, which I didn't test yet
+ - [x] linear regression (least squares)
+ - [ ] MaxEnt (might be part of the Multilayer Perceptron below)
  - [ ] MaxEnt Markov Models
- - [ ] Ridge Regression
- - [ ] Lasso
+ - [ ] Lasso (l1 norm)
+ - [x] Ridge Regression (l2 norm)
+ - [ ] SVM (Hinge Loss)
  - [ ] CG Support
  - [ ] Adagrad
 - [ ] Multilayer Perceptron
