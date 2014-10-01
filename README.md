@@ -28,6 +28,7 @@ Supported Algorithms
 - [ ] RBM
 - [ ] KNN
 - [ ] Canopy Clustering
+- [ ] Markov Chain
 
 Sample Usage
 ===================
