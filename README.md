@@ -19,7 +19,7 @@ Supported Algorithms
  - [x] linear regression (least squares)
  - [ ] MaxEnt (might be part of the Multilayer Perceptron below)
  - [ ] MaxEnt Markov Models
- - [ ] Lasso (l1 norm)
+ - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
  - [ ] SVM (Hinge Loss)
  - [ ] CG Support

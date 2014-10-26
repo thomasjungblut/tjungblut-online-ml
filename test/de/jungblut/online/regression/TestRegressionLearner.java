@@ -20,6 +20,10 @@ import de.jungblut.math.squashing.LogisticErrorFunction;
 import de.jungblut.online.minimizer.StochasticGradientDescent;
 import de.jungblut.online.minimizer.StochasticGradientDescent.StochasticGradientDescentBuilder;
 import de.jungblut.online.ml.FeatureOutcomePair;
+import de.jungblut.online.regularization.GradientDescentUpdater;
+import de.jungblut.online.regularization.L1Regularizer;
+import de.jungblut.online.regularization.L2Regularizer;
+import de.jungblut.online.regularization.WeightUpdater;
 
 public class TestRegressionLearner {
 
@@ -47,8 +51,23 @@ public class TestRegressionLearner {
   @Test
   public void ridgeGradCheck() {
     RegressionLearner learner = new RegressionLearner(
-        StochasticGradientDescentBuilder.create(0.1).build(),
-        new SigmoidActivationFunction(), new LogisticErrorFunction(), 1d);
+        StochasticGradientDescentBuilder.create(0.1).lambda(1d)
+            .weightUpdater(new L2Regularizer()).build(),
+        new SigmoidActivationFunction(), new LogisticErrorFunction());
+    learner.setRandom(new Random(0));
+
+    // for both classes
+    for (int i = 0; i <= 1; i++) {
+      gridGradCheck(learner, i);
+    }
+  }
+
+  @Test
+  public void lassoGradCheck() {
+    RegressionLearner learner = new RegressionLearner(
+        StochasticGradientDescentBuilder.create(0.1).lambda(1d)
+            .weightUpdater(new L1Regularizer()).build(),
+        new SigmoidActivationFunction(), new LogisticErrorFunction());
     learner.setRandom(new Random(0));
 
     // for both classes
@@ -93,7 +112,7 @@ public class TestRegressionLearner {
   public void testRidgeLogisticRegression() {
     List<FeatureOutcomePair> data = generateData();
 
-    RegressionLearner learner = newLearner(1d);
+    RegressionLearner learner = newRegularizedLearner(1d, new L2Regularizer());
 
     RegressionModel model = learner.train(() -> data.stream());
     Assert.assertArrayEquals(new double[] { -303.87207930601994,
@@ -116,14 +135,19 @@ public class TestRegressionLearner {
   }
 
   public RegressionLearner newLearner() {
-    return newLearner(0d);
+    return newRegularizedLearner(0d, new GradientDescentUpdater());
   }
 
-  public RegressionLearner newLearner(double lambda) {
-    StochasticGradientDescent min = StochasticGradientDescentBuilder
-        .create(0.1).build();
+  public RegressionLearner newRegularizedLearner(double lambda,
+      WeightUpdater updater) {
+    StochasticGradientDescentBuilder builder = StochasticGradientDescentBuilder
+        .create(0.1);
+    if (lambda != 0d) {
+      builder = builder.lambda(lambda).weightUpdater(updater);
+    }
+    StochasticGradientDescent min = builder.build();
     RegressionLearner learner = new RegressionLearner(min,
-        new SigmoidActivationFunction(), new LogisticErrorFunction(), lambda);
+        new SigmoidActivationFunction(), new LogisticErrorFunction());
     learner.setRandom(new Random(1337));
     learner.setNumPasses(25);
     return learner;

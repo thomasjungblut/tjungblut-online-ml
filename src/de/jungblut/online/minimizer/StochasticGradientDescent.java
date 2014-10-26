@@ -15,6 +15,9 @@ import com.google.common.base.Preconditions;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
 import de.jungblut.online.ml.FeatureOutcomePair;
+import de.jungblut.online.regularization.CostWeightTuple;
+import de.jungblut.online.regularization.GradientDescentUpdater;
+import de.jungblut.online.regularization.WeightUpdater;
 
 /**
  * Stochastic gradient descent. This class is designed to work on a parallel
@@ -33,9 +36,11 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     private final double alpha;
     private double breakDifference;
     private double momentum;
+    private double lambda;
     private int annealingIteration = -1;
     private int historySize = 50;
     private int progressReportInterval = 1;
+    private WeightUpdater weightUpdater = new GradientDescentUpdater();
 
     private StochasticGradientDescentBuilder(double alpha) {
       this.alpha = alpha;
@@ -59,12 +64,40 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
 
     /**
+     * Sets the weight updater, for example to use regularization. The default
+     * is the normal gradient descent.
+     * 
+     * To set the regularization parameter use the {@link #lambda(double)}
+     * method.
+     * 
+     * @param weightUpdater the updater to use.
+     * @return the builder again.
+     */
+    public StochasticGradientDescentBuilder weightUpdater(
+        WeightUpdater weightUpdater) {
+      this.weightUpdater = Preconditions.checkNotNull(weightUpdater);
+      return this;
+    }
+
+    /**
+     * Sets the regularization parameter "lambda".
+     * 
+     * @param lambda the amount to regularize with.
+     * @return the builder again.
+     */
+    public StochasticGradientDescentBuilder lambda(double lambda) {
+      this.lambda = lambda;
+      return this;
+    }
+
+    /**
      * Sets the size of the history to keep to compute average improvements and
      * output progress information.
      * 
      * @return the builder again.
      */
     public StochasticGradientDescentBuilder historySize(int historySize) {
+      Preconditions.checkArgument(historySize > 0, "HistorySize must be > 0");
       this.historySize = historySize;
       return this;
     }
@@ -77,6 +110,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
      * @return the builder again.
      */
     public StochasticGradientDescentBuilder progressReportInterval(int interval) {
+      Preconditions.checkArgument(interval > 0, "ReportInterval must be > 0");
       this.progressReportInterval = interval;
       return this;
     }
@@ -124,9 +158,11 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private final double breakDifference;
   private final double momentum;
   private final double initialAlpha;
+  private final double lambda;
   private final int annealingIteration;
   private final int historySize;
   private final int progressReportInterval;
+  private final WeightUpdater weightUpdater;
   private final StampedLock lock = new StampedLock();
   private final Deque<Double> history = new LinkedList<>();
 
@@ -144,6 +180,8 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     this.annealingIteration = builder.annealingIteration;
     this.historySize = builder.historySize;
     this.progressReportInterval = builder.progressReportInterval;
+    this.weightUpdater = builder.weightUpdater;
+    this.lambda = builder.lambda;
   }
 
   @Override
@@ -191,27 +229,33 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     try {
       asWriteLock.lock();
       dropOldValues(history);
-      history.addLast(observed.getCost());
+
+      // compute the final weight update
+      CostWeightTuple update = weightUpdater.computeNewWeights(theta,
+          observed.getGradient(), alpha, iteration, lambda, observed.getCost());
+
+      // save our last parameter
+      lastTheta = theta;
+      theta = update.getWeight();
+
+      // update the history
+      history.addLast(update.getCost());
+
       // break if we converged below the limit
       if (converged(history, breakDifference)) {
         stopAfterThisPass = true;
       }
 
-      DoubleVector gradient = observed.getGradient();
       // check annealing
       if (annealingIteration > 0) {
         // always pick the initial learning rate
         alpha = this.initialAlpha / (1d + iteration / annealingIteration);
       }
-      // save our last parameter
-      lastTheta = theta;
-      // basically subtract the gradient multiplied with the learning rate
-      theta = theta.subtract(gradient.multiply(alpha));
+
+      // compute momentum
       if (lastTheta != null && momentum != 0d) {
         // we add momentum as the parameter "m" multiplied by the
-        // difference
-        // of
-        // both theta vectors
+        // difference of both theta vectors
         theta = theta.add((lastTheta.subtract(theta)).multiply(momentum));
       }
       iteration++;
@@ -220,6 +264,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
   }
 
+  // TODO this should use a cyclic buffer instead of a deque
   private void dropOldValues(Deque<Double> lastCosts) {
     while (lastCosts.size() > historySize) {
       lastCosts.pop();
