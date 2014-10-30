@@ -44,52 +44,62 @@ public class TestRegressionLearner {
 
     // for both classes
     for (int i = 0; i <= 1; i++) {
-      gridGradCheck(learner, i);
+      gridGradCheck(learner, i, new GradientDescentUpdater());
     }
   }
 
   @Test
   public void ridgeGradCheck() {
     RegressionLearner learner = new RegressionLearner(
-        StochasticGradientDescentBuilder.create(0.1).lambda(1d)
-            .weightUpdater(new L2Regularizer()).build(),
+        StochasticGradientDescentBuilder.create(0.1).build(),
         new SigmoidActivationFunction(), new LogisticErrorFunction());
     learner.setRandom(new Random(0));
 
     // for both classes
     for (int i = 0; i <= 1; i++) {
-      gridGradCheck(learner, i);
+      gridGradCheck(learner, i, new L2Regularizer());
     }
   }
 
   @Test
   public void lassoGradCheck() {
     RegressionLearner learner = new RegressionLearner(
-        StochasticGradientDescentBuilder.create(0.1).lambda(1d)
-            .weightUpdater(new L1Regularizer()).build(),
+        StochasticGradientDescentBuilder.create(0.1).build(),
         new SigmoidActivationFunction(), new LogisticErrorFunction());
     learner.setRandom(new Random(0));
 
     // for both classes
     for (int i = 0; i <= 1; i++) {
-      gridGradCheck(learner, i);
+      gridGradCheck(learner, i, new L1Regularizer());
     }
   }
 
-  public void gridGradCheck(RegressionLearner learner, int clz) {
+  public void gridGradCheck(RegressionLearner learner, int clz,
+      WeightUpdater updater) {
     // 0.1 steps between zero and 1
     for (double d = 0.0; d <= 1.0; d += 0.1) {
       DoubleVector weights = new DenseDoubleVector(new double[] { d, d });
 
       DoubleVector nextFeature = new DenseDoubleVector(new double[] { 1, 10 });
       DoubleVector nextOutcome = new DenseDoubleVector(new double[] { clz });
-      DoubleVector numGrad = MathUtils.numericalGradient(weights,
-          (x) -> learner.observeExample(new FeatureOutcomePair(nextFeature,
-              nextOutcome), x));
+      DoubleVector numGrad = MathUtils.numericalGradient(
+          weights,
+          (x) -> {
+            CostGradientTuple tmpGrad = learner.observeExample(
+                new FeatureOutcomePair(nextFeature, nextOutcome), x);
+            CostGradientTuple tmpUpdatedGradient = updater.computeGradient(x,
+                tmpGrad.getGradient(), 1d, 0, 1d, tmpGrad.getCost());
+
+            return new CostGradientTuple(tmpUpdatedGradient.getCost(), null);
+          });
 
       CostGradientTuple realGrad = learner.observeExample(
           new FeatureOutcomePair(nextFeature, nextOutcome), weights);
-      Assert.assertArrayEquals(numGrad.toArray(), realGrad.getGradient()
+      // we compute the new weights (to test regularization gradients)
+      CostGradientTuple updatedGradient = updater.computeGradient(weights,
+          realGrad.getGradient(), 1d, 0, 1d, realGrad.getCost());
+
+      Assert.assertArrayEquals(numGrad.toArray(), updatedGradient.getGradient()
           .toArray(), 1e-4);
     }
   }

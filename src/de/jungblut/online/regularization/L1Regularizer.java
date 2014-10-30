@@ -16,7 +16,7 @@ import de.jungblut.math.DoubleVector;
  * regularization is applied after the gradient step. This is known to result in
  * better sparsity of the intermediate solution.
  */
-public class L1Regularizer implements WeightUpdater {
+public class L1Regularizer extends GradientDescentUpdater {
 
   @Override
   public CostWeightTuple computeNewWeights(DoubleVector theta,
@@ -29,6 +29,7 @@ public class L1Regularizer implements WeightUpdater {
           .multiply(learningRate)));
     }
 
+    // TODO split this out as gradient computation and weight update
     double currentStep = iteration == 0 ? learningRate : learningRate
         / FastMath.sqrt(iteration);
     DoubleVector newWeights = theta.subtract(gradient.multiply(currentStep));
@@ -46,4 +47,5 @@ public class L1Regularizer implements WeightUpdater {
 
     return new CostWeightTuple(cost, newWeights);
   }
+
 }

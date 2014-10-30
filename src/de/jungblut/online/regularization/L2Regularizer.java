@@ -1,6 +1,7 @@
 package de.jungblut.online.regularization;
 
 import de.jungblut.math.DoubleVector;
+import de.jungblut.math.minimize.CostGradientTuple;
 
 /**
  * Computes the L2 regularized update: R(w) = (||w||^2) / 2. It assumes the bias
@@ -10,10 +11,10 @@ import de.jungblut.math.DoubleVector;
  * @author thomas.jungblut
  *
  */
-public class L2Regularizer implements WeightUpdater {
+public class L2Regularizer extends GradientDescentUpdater {
 
   @Override
-  public CostWeightTuple computeNewWeights(DoubleVector weights,
+  public CostGradientTuple computeGradient(DoubleVector weights,
       DoubleVector gradient, double learningRate, long iteration,
       double lambda, double cost) {
     if (lambda != 0d) {
@@ -25,8 +26,6 @@ public class L2Regularizer implements WeightUpdater {
       cost += lambda * powered.sum() / 2d;
       gradient = gradient.add(regGrad);
     }
-    return new CostWeightTuple(cost, weights.subtract(gradient
-        .multiply(learningRate)));
+    return new CostGradientTuple(cost, gradient);
   }
-
 }
