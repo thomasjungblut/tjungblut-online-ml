@@ -28,8 +28,16 @@ public class RegressionClassifier extends AbstractPredictor {
 
   @Override
   public DoubleVector predict(DoubleVector feature) {
-    return new SingleEntryDoubleVector(model.getActivationFunction().apply(
-        feature.dot(model.getWeights())));
+    Preconditions.checkArgument(feature.getDimension() == model.getWeights()
+        .getDimension(),
+        "feature dimension must match model weight dimension! Feature: "
+            + feature.getDimension() + " != Model: "
+            + model.getWeights().getDimension());
+
+    double result = model.getActivationFunction().apply(
+        feature.dot(model.getWeights()));
+
+    return new SingleEntryDoubleVector(result);
   }
 
 }

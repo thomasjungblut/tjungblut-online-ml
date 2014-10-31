@@ -61,19 +61,6 @@ public class TestRegressionLearner {
     }
   }
 
-  @Test
-  public void lassoGradCheck() {
-    RegressionLearner learner = new RegressionLearner(
-        StochasticGradientDescentBuilder.create(0.1).build(),
-        new SigmoidActivationFunction(), new LogisticErrorFunction());
-    learner.setRandom(new Random(0));
-
-    // for both classes
-    for (int i = 0; i <= 1; i++) {
-      gridGradCheck(learner, i, new L1Regularizer());
-    }
-  }
-
   public void gridGradCheck(RegressionLearner learner, int clz,
       WeightUpdater updater) {
     // 0.1 steps between zero and 1
@@ -133,6 +120,20 @@ public class TestRegressionLearner {
   }
 
   @Test
+  public void testLassoLogisticRegression() {
+    List<FeatureOutcomePair> data = generateDataAddedNoise(2);
+
+    RegressionLearner learner = newRegularizedLearner(1d, new L1Regularizer());
+
+    RegressionModel model = learner.train(() -> data.stream());
+    // basically the l1 norm should set the noise to zero
+    Assert.assertArrayEquals(new double[] { 0.0, 0.0 }, model.getWeights()
+        .sliceByLength(3, 2).toArray(), 1e-2);
+    double acc = computeClassificationAccuracy(generateDataAddedNoise(2), model);
+    Assert.assertEquals(1d, acc, 0.1);
+  }
+
+  @Test
   public void testParallelLogisticRegression() {
     List<FeatureOutcomePair> data = generateData();
     RegressionLearner learner = newLearner();
@@ -175,6 +176,28 @@ public class TestRegressionLearner {
       }
     }
     return correct / data.size();
+  }
+
+  public List<FeatureOutcomePair> generateDataAddedNoise(int noiseFeatures) {
+    return generateData()
+        .stream()
+        .map(
+            (featOut) -> {
+              DoubleVector oldFeature = featOut.getFeature();
+              DoubleVector feat = new DenseDoubleVector(oldFeature
+                  .getDimension() + noiseFeatures);
+
+              for (int i = 0; i < oldFeature.getDimension(); i++) {
+                feat.set(i, oldFeature.get(i));
+              }
+
+              Random random = new Random(1337);
+              for (int i = 0; i < noiseFeatures; i++) {
+                feat.set(i + oldFeature.getDimension(), random.nextDouble());
+              }
+
+              return new FeatureOutcomePair(feat, featOut.getOutcome());
+            }).collect(Collectors.toList());
   }
 
   public List<FeatureOutcomePair> generateData() {

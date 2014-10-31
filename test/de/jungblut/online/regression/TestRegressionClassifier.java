@@ -26,4 +26,15 @@ public class TestRegressionClassifier {
         25d, 25d }));
     Assert.assertEquals(0d, prediction.get(0), 1e-4);
   }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testFailOnDimensionMismatch() {
+    DenseDoubleVector weights = new DenseDoubleVector(new double[] { 0, 0, 0 });
+
+    RegressionClassifier classifier = new RegressionClassifier(weights,
+        new SigmoidActivationFunction());
+
+    classifier.predict(new DenseDoubleVector(new double[] { 0, 0 }));
+
+  }
 }

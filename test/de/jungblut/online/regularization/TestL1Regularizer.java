@@ -18,9 +18,9 @@ public class TestL1Regularizer {
     CostWeightTuple update = updater.computeNewWeights(theta, grad,
         learningRate, 1, 1d, 1d);
 
-    double[] expected = new double[] { 0.8, 0.8, 0.8 };
+    double[] expected = new double[] { 0.9, 0.8, 0.8 };
     Assert.assertArrayEquals(expected, update.getWeight().toArray(), 1e-8);
-    Assert.assertEquals(3.4d, update.getCost(), 1e-8);
+    Assert.assertEquals(2.8d, update.getCost(), 1e-8);
   }
 
   @Test

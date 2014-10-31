@@ -25,27 +25,26 @@ public class L1Regularizer extends GradientDescentUpdater {
 
     if (lambda == 0d) {
       // do simple gradient descent step in this case
-      return new CostWeightTuple(cost, theta.subtract(gradient
-          .multiply(learningRate)));
+      return super.computeNewWeights(theta, gradient, learningRate, iteration,
+          lambda, cost);
     }
 
-    // TODO split this out as gradient computation and weight update
-    double currentStep = iteration == 0 ? learningRate : learningRate
-        / FastMath.sqrt(iteration);
-    DoubleVector newWeights = theta.subtract(gradient.multiply(currentStep));
-    double shrinkageVal = lambda * currentStep;
+    DoubleVector newWeights = theta.subtract(gradient.multiply(learningRate));
+    double shrinkageVal = lambda * learningRate;
 
-    for (int i = 0; i < newWeights.getDimension(); i++) {
+    double addedCost = 0d;
+    // don't regularize the bias
+    for (int i = 1; i < newWeights.getDimension(); i++) {
       double weight = newWeights.get(i);
-      newWeights.set(
-          i,
-          FastMath.signum(weight)
-              * FastMath.max(0.0, FastMath.abs(weight) - shrinkageVal));
+      double absWeight = FastMath.abs(weight);
+      double newWeight = FastMath.signum(weight)
+          * FastMath.max(0.0, absWeight - shrinkageVal);
+      newWeights.set(i, newWeight);
+      addedCost += absWeight;
     }
 
-    cost += newWeights.abs().sum() * lambda;
+    cost += addedCost * lambda;
 
     return new CostWeightTuple(cost, newWeights);
   }
-
 }

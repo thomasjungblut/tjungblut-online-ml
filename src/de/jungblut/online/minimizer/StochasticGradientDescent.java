@@ -279,7 +279,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     if (lastCosts.size() >= 2) {
       double first = lastCosts.peek();
       double value = lastCosts.peekLast();
-      return (first - value) / lastCosts.size();
+      return (value - first) / lastCosts.size();
     }
     return 0d;
   }
