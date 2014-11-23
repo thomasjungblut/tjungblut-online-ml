@@ -309,7 +309,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
 
 	private boolean converged(Deque<Double> lastCosts, double limit) {
 		if (validationPercentage > 0d) {
-			return (validationError / iteration) < limit;
+			return (validationError / validationItems) < limit;
 		}
 		return Math.abs(getAverageImprovement(lastCosts)) < limit;
 	}
