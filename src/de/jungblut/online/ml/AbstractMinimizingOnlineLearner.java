@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
+import de.jungblut.math.sparse.SparseDoubleVector;
 import de.jungblut.online.minimizer.StochasticMinimizer;
 
 public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
@@ -18,6 +19,8 @@ public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
 
   protected Random random = new Random();
   protected int numPasses = 1;
+
+  protected boolean sparseWeights;
 
   public AbstractMinimizingOnlineLearner(StochasticMinimizer minimizer) {
     this.minimizer = minimizer;
@@ -71,16 +74,24 @@ public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
   }
 
   protected DoubleVector randomInitialize(int dimension) {
-    double[] array = new double[dimension];
-    for (int i = 0; i < array.length; i++) {
-      array[i] = (random.nextDouble() * 2) - 1d;
+    if (sparseWeights) {
+      return new SparseDoubleVector(dimension);
+    } else {
+      double[] array = new double[dimension];
+      for (int i = 0; i < array.length; i++) {
+        array[i] = (random.nextDouble() * 2) - 1d;
+      }
+      return new DenseDoubleVector(array);
     }
-    return new DenseDoubleVector(array);
   }
 
   public void setRandom(Random random) {
     this.random = Preconditions.checkNotNull(random,
         "Supplied random was null!");
+  }
+
+  public void useSparseWeights() {
+    sparseWeights = true;
   }
 
   public void setNumPasses(int passes) {
