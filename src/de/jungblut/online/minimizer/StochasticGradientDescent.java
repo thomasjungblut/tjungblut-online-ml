@@ -205,6 +205,12 @@ public class StochasticGradientDescent implements StochasticMinimizer {
       currentStream.forEach((next) -> doStep(passFinal, next, costFunction,
           verbose));
 
+      if (verbose) {
+        LOG.info("Pass " + pass + " | Iteration " + iteration
+            + " | Validation Cost: " + validationError
+            / Math.max(validationItems, 1));
+      }
+
       if (stopAfterThisPass) {
         break;
       }
