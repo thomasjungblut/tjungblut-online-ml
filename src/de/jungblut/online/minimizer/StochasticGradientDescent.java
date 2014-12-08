@@ -38,7 +38,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     private double breakDifference;
     private double momentum;
     private double lambda;
-    private int annealingIteration = -1;
     private int historySize = 10;
     private int progressReportInterval = 1;
     private double holdoutValidationPercentage = 0d;
@@ -145,22 +144,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
 
     /**
-     * Sets a simple annealing (alpha / (1+current_iteration / phi)) where phi
-     * is the given parameter here. This will gradually lower the global
-     * learning rate after the given amount of iterations.
-     * 
-     * @param iteration the iteration to start annealing.
-     * @return the builder again.
-     */
-    public StochasticGradientDescentBuilder annealingAfter(int iteration) {
-      Preconditions.checkArgument(iteration > 0,
-          "Annealing can only kick in after the first iteration! Given: "
-              + iteration);
-      this.annealingIteration = iteration;
-      return this;
-    }
-
-    /**
      * Creates a new builder.
      * 
      * @param alpha the learning rate to set.
@@ -179,7 +162,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private final double initialAlpha;
   private final double lambda;
   private final double validationPercentage;
-  private final int annealingIteration;
   private final int historySize;
   private final int progressReportInterval;
   private final WeightUpdater weightUpdater;
@@ -193,13 +175,13 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private double validationError;
   private boolean stopAfterThisPass = false;
   private long iteration = 0;
+  private long allIterations = 0;
 
   private StochasticGradientDescent(StochasticGradientDescentBuilder builder) {
     this.initialAlpha = builder.alpha;
     this.alpha = this.initialAlpha;
     this.breakDifference = builder.breakDifference;
     this.momentum = builder.momentum;
-    this.annealingIteration = builder.annealingIteration;
     this.historySize = builder.historySize;
     this.progressReportInterval = builder.progressReportInterval;
     this.weightUpdater = builder.weightUpdater;
@@ -281,13 +263,11 @@ public class StochasticGradientDescent implements StochasticMinimizer {
         stopAfterThisPass = true;
       }
 
-      // check annealing
-      if (annealingIteration > 0) {
-        // always pick the initial learning rate
-        alpha = this.initialAlpha / (1d + iteration / annealingIteration);
-      }
-
+      allIterations++;
       iteration++;
+
+      alpha = 1d / (initialAlpha * (allIterations + 2));
+
     } finally {
       asWriteLock.unlock();
     }
@@ -305,7 +285,8 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   public CostWeightTuple updateWeights(CostGradientTuple observed) {
     // compute the final weight update
     CostWeightTuple update = weightUpdater.computeNewWeights(theta,
-        observed.getGradient(), alpha, iteration, lambda, observed.getCost());
+        observed.getGradient(), alpha, allIterations, lambda,
+        observed.getCost());
     return update;
   }
 

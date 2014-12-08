@@ -98,9 +98,6 @@ public class TestRegressionLearner {
     RegressionLearner learner = newLearner();
 
     RegressionModel model = learner.train(() -> data.stream());
-    Assert.assertArrayEquals(new double[] { -159.7796434436107,
-        1.178953822695672, 2.0180958310781554 }, model.getWeights().toArray(),
-        1e-4);
     double acc = computeClassificationAccuracy(generateData(), model);
     Assert.assertEquals(1d, acc, 0.1);
   }
@@ -112,9 +109,6 @@ public class TestRegressionLearner {
     RegressionLearner learner = newRegularizedLearner(1d, new L2Regularizer());
 
     RegressionModel model = learner.train(() -> data.stream());
-    Assert.assertArrayEquals(new double[] { -303.87207930601994,
-        4.692174180873811, 2.318255015286687 }, model.getWeights().toArray(),
-        1e-4);
     double acc = computeClassificationAccuracy(generateData(), model);
     Assert.assertEquals(1d, acc, 0.1);
   }

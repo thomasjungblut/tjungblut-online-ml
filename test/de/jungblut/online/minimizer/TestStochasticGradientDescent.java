@@ -40,7 +40,7 @@ public class TestStochasticGradientDescent {
 
     StochasticCostFunction inlineFunction = getCostFunction();
     StochasticGradientDescent gd = StochasticGradientDescentBuilder
-        .create(0.8d).momentum(0.9d).breakOnDifference(1e-20).build();
+        .create(0.01d).momentum(0.9d).breakOnDifference(1e-20).build();
     DoubleVector minimizeFunction = gd.minimize(start, fakeStream(),
         inlineFunction, 10, false);
     // 1E-5 is close enough to zero for the test to pass

@@ -40,10 +40,9 @@ public class RegressionLearner extends
     DoubleVector hypothesis = new SingleEntryDoubleVector(
         activationFunction.apply(next.getFeature().dot(weights)));
     double cost = lossFunction.calculateError(next.getOutcome(), hypothesis);
-    double diff = hypothesis.subtract(next.getOutcome()).sum();
-    // TODO if we want to support other derivations of the gradient, we need to
-    // put them into the interface
-    DoubleVector gradient = next.getFeature().multiply(diff);
+    double deriv = lossFunction.calculateDerivative(next.getOutcome(),
+        hypothesis);
+    DoubleVector gradient = next.getFeature().multiply(deriv);
     return new CostGradientTuple(cost, gradient);
   }
 

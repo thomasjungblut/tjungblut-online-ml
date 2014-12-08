@@ -21,6 +21,7 @@ Supported Algorithms
  - [ ] MaxEnt Markov Models
  - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
+ - [x] FTRL
  - [ ] SVM (Hinge Loss)
  - [ ] CG Support
  - [ ] Adagrad
