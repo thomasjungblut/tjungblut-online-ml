@@ -41,7 +41,7 @@ public class RegressionLearner extends
         activationFunction.apply(next.getFeature().dot(weights)));
     double cost = lossFunction.calculateError(next.getOutcome(), hypothesis);
     double deriv = lossFunction.calculateDerivative(next.getOutcome(),
-        hypothesis);
+        hypothesis).get(0);
     DoubleVector gradient = next.getFeature().multiply(deriv);
     return new CostGradientTuple(cost, gradient);
   }
