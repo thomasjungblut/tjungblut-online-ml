@@ -156,18 +156,19 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   }
 
   private final Random rand = new Random();
+  private final StochasticGradientDescentBuilder builder;
 
-  private final double breakDifference;
-  private final double momentum;
-  private final double initialAlpha;
-  private final double lambda;
-  private final double validationPercentage;
-  private final int historySize;
-  private final int progressReportInterval;
-  private final WeightUpdater weightUpdater;
-  private final StampedLock lock = new StampedLock();
-  private final Deque<Double> history = new LinkedList<>();
+  private double breakDifference;
+  private double momentum;
+  private double initialAlpha;
+  private double lambda;
+  private double validationPercentage;
+  private int historySize;
+  private int progressReportInterval;
+  private WeightUpdater weightUpdater;
+  private StampedLock lock = new StampedLock();
 
+  private Deque<Double> history;
   private DoubleVector lastTheta = null;
   private DoubleVector theta;
   private double alpha;
@@ -178,6 +179,11 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private long allIterations = 0;
 
   private StochasticGradientDescent(StochasticGradientDescentBuilder builder) {
+    this.builder = builder;
+    resetState(builder);
+  }
+
+  private void resetState(StochasticGradientDescentBuilder builder) {
     this.initialAlpha = builder.alpha;
     this.alpha = this.initialAlpha;
     this.breakDifference = builder.breakDifference;
@@ -187,13 +193,17 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     this.weightUpdater = builder.weightUpdater;
     this.lambda = builder.lambda;
     this.validationPercentage = builder.holdoutValidationPercentage;
+    this.history = new LinkedList<>();
   }
 
   @Override
   public DoubleVector minimize(DoubleVector start,
       Supplier<Stream<FeatureOutcomePair>> streamSupplier,
       StochasticCostFunction costFunction, int numPasses, boolean verbose) {
+
+    resetState(builder);
     theta = start;
+
     for (int pass = 0; pass < numPasses; pass++) {
 
       iteration = 0;
