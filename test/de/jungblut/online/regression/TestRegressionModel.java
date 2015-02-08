@@ -18,8 +18,8 @@ public class TestRegressionModel {
   @Test
   public void testSerDe() throws IOException {
     DoubleVector weights = new DenseDoubleVector(new double[] { 1, 2, 3, 4, 5 });
-    RegressionModel model = new RegressionModel(weights,
-        new SigmoidActivationFunction());
+    SigmoidActivationFunction activation = new SigmoidActivationFunction();
+    RegressionModel model = new RegressionModel(weights, activation);
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DataOutputStream dos = new DataOutputStream(baos);
@@ -33,8 +33,8 @@ public class TestRegressionModel {
     Assert.assertArrayEquals(weights.toArray(), deserialized.getWeights()
         .toArray(), 1e-8);
 
-    Assert.assertEquals(model.getActivationFunction().getClass(), model
-        .getActivationFunction().getClass());
+    Assert.assertEquals(activation.getClass(), model.getActivationFunction()
+        .getClass());
   }
 
 }
