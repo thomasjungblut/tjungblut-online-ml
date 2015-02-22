@@ -5,9 +5,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.commons.math3.util.FastMath;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import de.jungblut.math.DoubleMatrix;
 import de.jungblut.math.DoubleVector;
@@ -30,7 +30,8 @@ import de.jungblut.online.ml.FeatureOutcomePair;
 public class NaiveBayesLearner extends
     AbstractOnlineLearner<BayesianProbabilityModel> {
 
-  private static final Log LOG = LogFactory.getLog(NaiveBayesLearner.class);
+  private static final Logger LOG = LogManager
+      .getLogger(NaiveBayesLearner.class);
 
   private DoubleMatrix probabilityMatrix;
   private DoubleVector classPriorProbability;

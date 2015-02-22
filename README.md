@@ -17,6 +17,7 @@ Supported Algorithms
 - [x] Stochastic Gradient Descent 
  - [x] Logistic regression
  - [x] Linear regression (least squares)
+ - [x] Multinomial regression
  - [ ] MaxEnt Markov Models
  - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
@@ -95,6 +96,42 @@ try (DataInputStream dis = new DataInputStream(new FileInputStream("/tmp/model.b
 }
 // take dis
 ```
+
+MNIST Multinomial Logistic Regression
+-------------------------------------
+
+A very simply code example for training the multinomial logistic regression is on the MNIST dataset. 
+Here we use the data from the [digit recognizer kaggle competetion](http://www.kaggle.com/c/digit-recognizer).
+
+```java
+
+    Dataset trainingSet = MNISTReader.readMNISTTrainImages("/home/user/datasets/mnist/kaggle/train.csv");
+   
+    IntFunction<RegressionLearner> factory = (i) -> {
+    	  // take care of not sharing any state from the outside, since classes are trained in parallel
+        StochasticGradientDescent minimizer = StochasticGradientDescentBuilder
+        .create(0.1)
+        .holdoutValidationPercentage(0.1d)
+        .lambda(0.2)
+        .weightUpdater(new L2Regularizer())
+        .progressReportInterval(1_000_000)
+        .build();
+      RegressionLearner learner = new RegressionLearner(minimizer,
+          new SigmoidActivationFunction(), new LogisticErrorFunction());
+      learner.setNumPasses(50);
+      learner.verbose();
+      return learner;
+    };
+
+    MultinomialRegressionLearner learner = new MultinomialRegressionLearner(factory);
+    learner.verbose();
+
+    MultinomialRegressionModel model = learner.train(() -> trainingSet.asStream());
+    MultinomialRegressionClassifier clf = new MultinomialRegressionClassifier(model);    
+    // do some classifications
+    
+```
+
 
 License
 -------

@@ -8,8 +8,8 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Preconditions;
 
@@ -29,8 +29,8 @@ import de.jungblut.online.regularization.WeightUpdater;
  */
 public class StochasticGradientDescent implements StochasticMinimizer {
 
-  private static final Log LOG = LogFactory
-      .getLog(StochasticGradientDescent.class);
+  private static final Logger LOG = LogManager
+      .getLogger(StochasticGradientDescent.class);
 
   public static class StochasticGradientDescentBuilder {
 
