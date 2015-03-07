@@ -36,7 +36,7 @@ public class TestMultinomialRegressionLearner {
           .create(1e-4).progressReportInterval(100_000).build();
       RegressionLearner learner = new RegressionLearner(minimizer,
           new SigmoidActivationFunction(), new LogisticErrorFunction());
-      learner.setNumPasses(50);
+      learner.setNumPasses(100);
       return learner;
     };
 

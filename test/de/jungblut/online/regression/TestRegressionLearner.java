@@ -2,6 +2,7 @@ package de.jungblut.online.regression;
 
 import java.util.List;
 import java.util.Random;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -12,10 +13,12 @@ import org.junit.Test;
 
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.MathUtils;
+import de.jungblut.math.activation.LinearActivationFunction;
 import de.jungblut.math.activation.SigmoidActivationFunction;
 import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.dense.SingleEntryDoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
+import de.jungblut.math.squashing.HingeErrorFunction;
 import de.jungblut.math.squashing.LogisticErrorFunction;
 import de.jungblut.online.minimizer.StochasticGradientDescent;
 import de.jungblut.online.minimizer.StochasticGradientDescent.StochasticGradientDescentBuilder;
@@ -103,6 +106,28 @@ public class TestRegressionLearner {
   }
 
   @Test
+  public void testLinearSVM() {
+    // hinge loss needs -1 vs. 1 as outcome
+    double negativeOutputClass = -1;
+    List<FeatureOutcomePair> data = generateData(negativeOutputClass);
+
+    RegressionLearner learner = newSVMLearner();
+
+    RegressionModel model = learner.train(() -> data.stream());
+
+    // since SVM's output the distance from the hyperplane to the given feature,
+    // we clip the values between -1 and 1.
+    // a common technique used to get probabilities is using Platt scaling,
+    // which trains a logistic regression on top of the SVM output.
+    Function<DoubleVector, DoubleVector> clipping = (v) -> new SingleEntryDoubleVector(
+        v.get(0) > 0 ? 1 : negativeOutputClass);
+
+    double acc = computeClassificationAccuracy(
+        generateData(negativeOutputClass), model, clipping);
+    Assert.assertEquals(1d, acc, 0.1);
+  }
+
+  @Test
   public void testRidgeLogisticRegression() {
     List<FeatureOutcomePair> data = generateData();
 
@@ -158,13 +183,31 @@ public class TestRegressionLearner {
     return learner;
   }
 
+  public RegressionLearner newSVMLearner() {
+    StochasticGradientDescentBuilder builder = StochasticGradientDescentBuilder
+        .create(0.1);
+    StochasticGradientDescent min = builder.build();
+    RegressionLearner learner = new RegressionLearner(min,
+        new LinearActivationFunction(), new HingeErrorFunction());
+    learner.setRandom(new Random(1337));
+    learner.setNumPasses(5);
+    return learner;
+  }
+
   public double computeClassificationAccuracy(List<FeatureOutcomePair> data,
       RegressionModel model) {
+    return computeClassificationAccuracy(data, model, (v) -> v);
+  }
+
+  public double computeClassificationAccuracy(List<FeatureOutcomePair> data,
+      RegressionModel model,
+      Function<DoubleVector, DoubleVector> clippingFunction) {
 
     double correct = 0;
     RegressionClassifier clf = new RegressionClassifier(model);
     for (FeatureOutcomePair pair : data) {
-      DoubleVector prediction = clf.predict(pair.getFeature());
+      DoubleVector prediction = clippingFunction.apply(clf.predict(pair
+          .getFeature()));
       if (prediction.subtract(pair.getOutcome()).abs().sum() < 0.1d) {
         correct++;
       }
@@ -195,13 +238,17 @@ public class TestRegressionLearner {
   }
 
   public List<FeatureOutcomePair> generateData() {
+    return generateData(0);
+  }
+
+  public List<FeatureOutcomePair> generateData(double negativeClasValue) {
     return IntStream
         .range(1, 2000)
         .mapToObj(
             (i) -> {
               double mean = i % 2 == 0 ? 25d : 75d;
               double stddev = 10d;
-              double clzVal = i % 2 == 0 ? 0d : 1d;
+              double clzVal = i % 2 == 0 ? negativeClasValue : 1d;
               double[] feat = new double[] { 1, rnd.nextGaussian(mean, stddev),
                   rnd.nextGaussian(mean, stddev) };
 

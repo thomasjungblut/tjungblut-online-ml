@@ -22,7 +22,8 @@ Supported Algorithms
  - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
  - [x] FTRL
- - [ ] SVM (Hinge Loss)
+ - [x] SVM (Hinge Loss)
+ - [x] Perceptron
  - [ ] CG Support
  - [ ] Adagrad
 - [ ] Multilayer Perceptron
