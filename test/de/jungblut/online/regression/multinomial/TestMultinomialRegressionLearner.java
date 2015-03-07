@@ -13,7 +13,7 @@ import org.junit.Test;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.activation.SigmoidActivationFunction;
 import de.jungblut.math.dense.DenseDoubleVector;
-import de.jungblut.math.squashing.LogisticErrorFunction;
+import de.jungblut.math.loss.LogLoss;
 import de.jungblut.online.minimizer.StochasticGradientDescent;
 import de.jungblut.online.minimizer.StochasticGradientDescent.StochasticGradientDescentBuilder;
 import de.jungblut.online.ml.FeatureOutcomePair;
@@ -35,7 +35,7 @@ public class TestMultinomialRegressionLearner {
       StochasticGradientDescent minimizer = StochasticGradientDescentBuilder
           .create(1e-4).progressReportInterval(100_000).build();
       RegressionLearner learner = new RegressionLearner(minimizer,
-          new SigmoidActivationFunction(), new LogisticErrorFunction());
+          new SigmoidActivationFunction(), new LogLoss());
       learner.setNumPasses(100);
       return learner;
     };

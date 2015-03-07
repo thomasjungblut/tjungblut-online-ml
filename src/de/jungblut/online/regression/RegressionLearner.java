@@ -5,8 +5,8 @@ import com.google.common.base.Preconditions;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.activation.ActivationFunction;
 import de.jungblut.math.dense.SingleEntryDoubleVector;
+import de.jungblut.math.loss.LossFunction;
 import de.jungblut.math.minimize.CostGradientTuple;
-import de.jungblut.math.squashing.ErrorFunction;
 import de.jungblut.online.minimizer.StochasticMinimizer;
 import de.jungblut.online.ml.AbstractMinimizingOnlineLearner;
 import de.jungblut.online.ml.FeatureOutcomePair;
@@ -23,10 +23,10 @@ public class RegressionLearner extends
     AbstractMinimizingOnlineLearner<RegressionModel> {
 
   private final ActivationFunction activationFunction;
-  private final ErrorFunction lossFunction;
+  private final LossFunction lossFunction;
 
   public RegressionLearner(StochasticMinimizer minimizer,
-      ActivationFunction activationFunction, ErrorFunction lossFunction) {
+      ActivationFunction activationFunction, LossFunction lossFunction) {
     super(minimizer);
     this.activationFunction = Preconditions.checkNotNull(activationFunction,
         "activation function");
@@ -39,7 +39,7 @@ public class RegressionLearner extends
       DoubleVector weights) {
     DoubleVector hypothesis = new SingleEntryDoubleVector(
         activationFunction.apply(next.getFeature().dot(weights)));
-    double cost = lossFunction.calculateError(next.getOutcome(), hypothesis);
+    double cost = lossFunction.calculateLoss(next.getOutcome(), hypothesis);
     double deriv = lossFunction.calculateDerivative(next.getOutcome(),
         hypothesis).get(0);
     DoubleVector gradient = next.getFeature().multiply(deriv);

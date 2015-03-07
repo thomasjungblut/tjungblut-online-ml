@@ -47,7 +47,7 @@ StochasticGradientDescent min = StochasticGradientDescentBuilder.create(0.1).bui
 // generate the data, note that the features must include a bias (constant 1) if you want to have one
 List<FeatureOutcomePair> data = generateData();
 
-RegressionLearner learner = new RegressionLearner(min, new SigmoidActivationFunction(), new LogisticErrorFunction());
+RegressionLearner learner = new RegressionLearner(min, new SigmoidActivationFunction(), new LogLoss());
 // do 5 passes over all data in a stream, the default is 1
 learner.setNumPasses(5);
 
@@ -118,7 +118,7 @@ Here we use the data from the [digit recognizer kaggle competetion](http://www.k
         .progressReportInterval(1_000_000)
         .build();
       RegressionLearner learner = new RegressionLearner(minimizer,
-          new SigmoidActivationFunction(), new LogisticErrorFunction());
+          new SigmoidActivationFunction(), new LogLoss());
       learner.setNumPasses(50);
       learner.verbose();
       return learner;

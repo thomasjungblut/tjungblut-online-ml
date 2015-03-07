@@ -13,7 +13,7 @@ import com.google.common.base.Preconditions;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.activation.ActivationFunction;
 import de.jungblut.math.dense.SingleEntryDoubleVector;
-import de.jungblut.math.squashing.ErrorFunction;
+import de.jungblut.math.loss.LossFunction;
 import de.jungblut.online.minimizer.StochasticMinimizer;
 import de.jungblut.online.ml.AbstractOnlineLearner;
 import de.jungblut.online.ml.FeatureOutcomePair;
@@ -43,7 +43,7 @@ public class MultinomialRegressionLearner extends
   private RegressionModel[] trainedModels;
 
   public MultinomialRegressionLearner(StochasticMinimizer minimizer,
-      ActivationFunction activationFunction, ErrorFunction lossFunction) {
+      ActivationFunction activationFunction, LossFunction lossFunction) {
     this((i) -> new RegressionLearner(minimizer, activationFunction,
         lossFunction));
   }

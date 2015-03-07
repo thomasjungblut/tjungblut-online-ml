@@ -17,9 +17,9 @@ import de.jungblut.math.activation.LinearActivationFunction;
 import de.jungblut.math.activation.SigmoidActivationFunction;
 import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.dense.SingleEntryDoubleVector;
+import de.jungblut.math.loss.HingeLoss;
+import de.jungblut.math.loss.LogLoss;
 import de.jungblut.math.minimize.CostGradientTuple;
-import de.jungblut.math.squashing.HingeErrorFunction;
-import de.jungblut.math.squashing.LogisticErrorFunction;
 import de.jungblut.online.minimizer.StochasticGradientDescent;
 import de.jungblut.online.minimizer.StochasticGradientDescent.StochasticGradientDescentBuilder;
 import de.jungblut.online.ml.FeatureOutcomePair;
@@ -42,7 +42,7 @@ public class TestRegressionLearner {
   public void gradCheck() {
     RegressionLearner learner = new RegressionLearner(
         StochasticGradientDescentBuilder.create(0.1).build(),
-        new SigmoidActivationFunction(), new LogisticErrorFunction());
+        new SigmoidActivationFunction(), new LogLoss());
     learner.setRandom(new Random(0));
 
     // for both classes
@@ -55,7 +55,7 @@ public class TestRegressionLearner {
   public void ridgeGradCheck() {
     RegressionLearner learner = new RegressionLearner(
         StochasticGradientDescentBuilder.create(0.1).build(),
-        new SigmoidActivationFunction(), new LogisticErrorFunction());
+        new SigmoidActivationFunction(), new LogLoss());
     learner.setRandom(new Random(0));
 
     // for both classes
@@ -177,7 +177,7 @@ public class TestRegressionLearner {
     }
     StochasticGradientDescent min = builder.build();
     RegressionLearner learner = new RegressionLearner(min,
-        new SigmoidActivationFunction(), new LogisticErrorFunction());
+        new SigmoidActivationFunction(), new LogLoss());
     learner.setRandom(new Random(1337));
     learner.setNumPasses(25);
     return learner;
@@ -188,7 +188,7 @@ public class TestRegressionLearner {
         .create(0.1);
     StochasticGradientDescent min = builder.build();
     RegressionLearner learner = new RegressionLearner(min,
-        new LinearActivationFunction(), new HingeErrorFunction());
+        new LinearActivationFunction(), new HingeLoss());
     learner.setRandom(new Random(1337));
     learner.setNumPasses(5);
     return learner;
