@@ -158,6 +158,10 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private final Random rand = new Random();
   private final StochasticGradientDescentBuilder builder;
 
+  private IterationFinishedCallback iterationCallback;
+  private ValidationFinishedCallback validationCallback;
+  private PassFinishedCallback passCallback;
+
   private double breakDifference;
   private double momentum;
   private double initialAlpha;
@@ -219,6 +223,16 @@ public class StochasticGradientDescent implements StochasticMinimizer {
         LOG.info("Pass " + pass + " | Iteration " + iteration
             + " | Validation Cost: " + validationError
             / Math.max(validationItems, 1));
+        if (passCallback != null) {
+          boolean continuePass = passCallback.onPassFinished(pass, iteration,
+              validationError, theta);
+
+          // break this pass, because the callback said so
+          if (!continuePass) {
+            break;
+          }
+
+        }
       }
 
       if (stopAfterThisPass) {
@@ -251,6 +265,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
 
     // TODO this write lock is huge, can it be broken down more?
+    // TODO I've seen huge amounts of contention between threads on this lock
 
     // do the updates
     Lock asWriteLock = lock.asWriteLock();
@@ -258,12 +273,28 @@ public class StochasticGradientDescent implements StochasticMinimizer {
       asWriteLock.lock();
       dropOldValues(history);
 
+      boolean validation = false;
       if (validationPercentage > 0 && rand.nextDouble() < validationPercentage) {
         validationError += observed.getCost();
         validationItems++;
         // update the history
         history.addLast(validationError / Math.max(validationItems, 1));
-        return; // return to not update the parameters
+        validation = true;
+
+        if (validationCallback != null) {
+          validationCallback.onValidationFinished(pass, iteration,
+              observed.getCost(), theta, next);
+        }
+      }
+
+      if (iterationCallback != null) {
+        iterationCallback.onIterationFinished(pass, iteration,
+            observed.getCost(), theta, validation);
+      }
+
+      if (validation) {
+        // return to not update the parameters when we did a validation step
+        return;
       }
 
       CostWeightTuple update = updateWeights(observed);
@@ -304,6 +335,19 @@ public class StochasticGradientDescent implements StochasticMinimizer {
         observed.getGradient(), alpha, allIterations, lambda,
         observed.getCost());
     return update;
+  }
+
+  public void setIterationCallback(IterationFinishedCallback iterationCallback) {
+    this.iterationCallback = iterationCallback;
+  }
+
+  public void setValidationCallback(
+      ValidationFinishedCallback validationCallback) {
+    this.validationCallback = validationCallback;
+  }
+
+  public void setPassCallback(PassFinishedCallback passCallback) {
+    this.passCallback = passCallback;
   }
 
   // TODO this should use a cyclic buffer instead of a deque

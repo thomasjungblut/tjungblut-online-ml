@@ -47,7 +47,7 @@ public class RegressionLearner extends
   }
 
   @Override
-  protected RegressionModel createModel(DoubleVector weights) {
+  public RegressionModel createModel(DoubleVector weights) {
     return new RegressionModel(weights, activationFunction);
   }
 }
