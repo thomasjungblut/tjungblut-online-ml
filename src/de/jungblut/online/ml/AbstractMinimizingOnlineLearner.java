@@ -9,7 +9,7 @@ import com.google.common.base.Preconditions;
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
-import de.jungblut.math.sparse.SparseDoubleVector;
+import de.jungblut.math.sparse.SequentialSparseDoubleVector;
 import de.jungblut.online.minimizer.StochasticMinimizer;
 
 public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
@@ -75,7 +75,7 @@ public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
 
   protected DoubleVector randomInitialize(int dimension) {
     if (sparseWeights) {
-      return new SparseDoubleVector(dimension);
+      return new SequentialSparseDoubleVector(dimension);
     } else {
       double[] array = new double[dimension];
       for (int i = 0; i < array.length; i++) {
