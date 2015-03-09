@@ -41,6 +41,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     private int historySize = 10;
     private int progressReportInterval = 1;
     private double holdoutValidationPercentage = 0d;
+    private boolean adaptiveLearningRate = false;
     private WeightUpdater weightUpdater = new GradientDescentUpdater();
 
     private StochasticGradientDescentBuilder(double alpha) {
@@ -144,6 +145,22 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
 
     /**
+     * Enables adaptive learning rate, using the algorithm: <br/>
+     * 
+     * <pre>
+     * alpha = 1d / (initialAlpha * (allIterations + 2));
+     * </pre>
+     * 
+     * where allIterations is a counter over all passes.
+     * 
+     * @return the builder again
+     */
+    public StochasticGradientDescentBuilder enableAdaptiveLearningRate() {
+      this.adaptiveLearningRate = true;
+      return this;
+    }
+
+    /**
      * Creates a new builder.
      * 
      * @param alpha the learning rate to set.
@@ -179,6 +196,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private int validationItems;
   private double validationError;
   private boolean stopAfterThisPass = false;
+  private boolean adaptiveLearningRate = false;
   private long iteration = 0;
   private long allIterations = 0;
 
@@ -197,6 +215,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     this.weightUpdater = builder.weightUpdater;
     this.lambda = builder.lambda;
     this.validationPercentage = builder.holdoutValidationPercentage;
+    this.adaptiveLearningRate = builder.adaptiveLearningRate;
     this.history = new LinkedList<>();
   }
 
@@ -313,7 +332,9 @@ public class StochasticGradientDescent implements StochasticMinimizer {
       allIterations++;
       iteration++;
 
-      alpha = 1d / (initialAlpha * (allIterations + 2));
+      if (adaptiveLearningRate) {
+        alpha = 1d / (initialAlpha * (allIterations + 2));
+      }
 
     } finally {
       asWriteLock.unlock();

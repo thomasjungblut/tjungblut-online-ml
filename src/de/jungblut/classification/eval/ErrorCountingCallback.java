@@ -31,7 +31,8 @@ public class ErrorCountingCallback implements IterationFinishedCallback,
       DoubleVector currentWeights) {
 
     LOG.info("Errors | Pass " + pass + " | Iteration " + iteration
-        + " | #Errors " + errors + " | Accuracy " + (errors / (double) seen));
+        + " | #Errors " + errors + " | Accuracy "
+        + ((seen - errors) / (double) seen));
 
     boolean continueComputation = errors != 0;
     errors = 0; // reset the errors

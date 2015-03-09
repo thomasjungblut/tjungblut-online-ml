@@ -29,8 +29,8 @@ public class TestStochasticGradientDescent {
         .minimize(start, fakeStream(), inlineFunction, 10, false);
 
     // 1E-5 is close enough to zero for the test to pass
-    assertEquals(minimizeFunction.get(0), 0, 1E-5);
-    assertEquals(minimizeFunction.get(1), 0, 1E-5);
+    assertEquals(0, minimizeFunction.get(0), 1E-5);
+    assertEquals(0, minimizeFunction.get(1), 1E-5);
   }
 
   @Test
@@ -40,12 +40,12 @@ public class TestStochasticGradientDescent {
 
     StochasticCostFunction inlineFunction = getCostFunction();
     StochasticGradientDescent gd = StochasticGradientDescentBuilder
-        .create(0.01d).momentum(0.9d).breakOnDifference(1e-20).build();
+        .create(0.01d).momentum(0.9d).build();
     DoubleVector minimizeFunction = gd.minimize(start, fakeStream(),
-        inlineFunction, 10, false);
+        inlineFunction, 100, false);
     // 1E-5 is close enough to zero for the test to pass
-    assertEquals(minimizeFunction.get(0), 0, 1E-5);
-    assertEquals(minimizeFunction.get(1), 0, 1E-5);
+    assertEquals(0, minimizeFunction.get(0), 1E-5);
+    assertEquals(0, minimizeFunction.get(1), 1E-5);
   }
 
   StochasticCostFunction getCostFunction() {

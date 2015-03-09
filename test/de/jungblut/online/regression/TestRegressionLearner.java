@@ -13,12 +13,16 @@ import org.junit.Test;
 
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.MathUtils;
+import de.jungblut.math.activation.ActivationFunction;
 import de.jungblut.math.activation.LinearActivationFunction;
 import de.jungblut.math.activation.SigmoidActivationFunction;
+import de.jungblut.math.activation.StepActivationFunction;
 import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.dense.SingleEntryDoubleVector;
 import de.jungblut.math.loss.HingeLoss;
 import de.jungblut.math.loss.LogLoss;
+import de.jungblut.math.loss.LossFunction;
+import de.jungblut.math.loss.StepLoss;
 import de.jungblut.math.minimize.CostGradientTuple;
 import de.jungblut.online.minimizer.StochasticGradientDescent;
 import de.jungblut.online.minimizer.StochasticGradientDescent.StochasticGradientDescentBuilder;
@@ -106,6 +110,19 @@ public class TestRegressionLearner {
   }
 
   @Test
+  public void testPerceptron() {
+    List<FeatureOutcomePair> data = generateData();
+
+    RegressionLearner learner = newRegularizedLearner(0d,
+        new GradientDescentUpdater(), new StepActivationFunction(0.5),
+        new StepLoss());
+
+    RegressionModel model = learner.train(() -> data.stream());
+    double acc = computeClassificationAccuracy(generateData(), model);
+    Assert.assertEquals(1d, acc, 0.1);
+  }
+
+  @Test
   public void testLinearSVM() {
     // hinge loss needs -1 vs. 1 as outcome
     double negativeOutputClass = -1;
@@ -170,14 +187,21 @@ public class TestRegressionLearner {
 
   public RegressionLearner newRegularizedLearner(double lambda,
       WeightUpdater updater) {
+    return newRegularizedLearner(lambda, updater,
+        new SigmoidActivationFunction(), new LogLoss());
+  }
+
+  public RegressionLearner newRegularizedLearner(double lambda,
+      WeightUpdater updater, ActivationFunction activationFunction,
+      LossFunction loss) {
     StochasticGradientDescentBuilder builder = StochasticGradientDescentBuilder
         .create(0.1);
     if (lambda != 0d) {
       builder = builder.lambda(lambda).weightUpdater(updater);
     }
     StochasticGradientDescent min = builder.build();
-    RegressionLearner learner = new RegressionLearner(min,
-        new SigmoidActivationFunction(), new LogLoss());
+    RegressionLearner learner = new RegressionLearner(min, activationFunction,
+        loss);
     learner.setRandom(new Random(1337));
     learner.setNumPasses(25);
     return learner;
