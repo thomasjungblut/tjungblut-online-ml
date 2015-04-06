@@ -10,7 +10,8 @@ public interface PassFinishedCallback {
    * 
    * @param pass the number of the current pass.
    * @param iteration the number of the current iteration.
-   * @param cost the cost at the current iteration.
+   * @param cost the validation error after the current pass. If no hold-out
+   *          validation was chosen, it will be zero.
    * @param currentWeights the current optimal weights.
    * @return false if we should stop the whole computation after this pass, or
    *         true if continue.

@@ -242,16 +242,17 @@ public class StochasticGradientDescent implements StochasticMinimizer {
         LOG.info("Pass " + pass + " | Iteration " + iteration
             + " | Validation Cost: " + validationError
             / Math.max(validationItems, 1));
-        if (passCallback != null) {
-          boolean continuePass = passCallback.onPassFinished(pass, iteration,
-              validationError, theta);
+      }
 
-          // break this pass, because the callback said so
-          if (!continuePass) {
-            break;
-          }
+      if (passCallback != null) {
+        boolean continuePass = passCallback.onPassFinished(pass, iteration,
+            validationError, theta);
 
+        // break this pass, because the callback said so
+        if (!continuePass) {
+          break;
         }
+
       }
 
       if (stopAfterThisPass) {
