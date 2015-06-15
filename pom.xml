@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>de.jungblut.ml</groupId>
@@ -7,7 +6,7 @@
 	<name>tjungblut-online-machine-learning</name>
 	<description>This is my online machine learning library.</description>
 	<url>https://github.com/thomasjungblut/tjungblut-online-ml</url>
-	<version>0.1-SNAPSHOT</version>
+	<version>0.2</version>
 	<packaging>jar</packaging>
 	<prerequisites>
 		<maven>3.0</maven>
@@ -37,7 +36,8 @@
 		<connection>scm:git:git@github.com:thomasjungblut/tjungblut-online-ml.git</connection>
 		<developerConnection>scm:git:git@github.com:thomasjungblut/tjungblut-online-ml.git</developerConnection>
 		<url>git@github.com:thomasjungblut/tjungblut-online-ml.git</url>
-	</scm>
+	  <tag>HEAD</tag>
+  </scm>
 
 	<distributionManagement>
 		<snapshotRepository>
