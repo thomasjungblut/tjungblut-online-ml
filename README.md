@@ -142,6 +142,18 @@ licensed by Apache 2.0 license, although I haven't put the usual header into the
 
 If something is not licensed via Apache 2.0, there is a reference or an additional licence header included in the specific source file.
 
+Maven
+-----
+
+If you use maven, you can get the latest release using the following dependency:
+
+```
+ <dependency>
+     <groupId>de.jungblut.ml</groupId>
+     <artifactId>tjungblut-online-ml</artifactId>
+     <version>0.2</version>
+ </dependency>
+```
 
 Build
 -----
