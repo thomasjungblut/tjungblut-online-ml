@@ -12,13 +12,11 @@ public interface WeightUpdater {
    * @param gradient the gradient.
    * @param learningRate the learning rate.
    * @param iteration the number of the current iteration.
-   * @param lambda the regularization parameter.
    * @param cost the computed cost for this gradient update.
    * @return the already updated weights for a particular updated gradient.
    */
   public CostWeightTuple computeNewWeights(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost);
+      DoubleVector gradient, double learningRate, long iteration, double cost);
 
   /**
    * Computes the gradient.
@@ -27,13 +25,11 @@ public interface WeightUpdater {
    * @param gradient the gradient.
    * @param learningRate the learning rate.
    * @param iteration the number of the current iteration.
-   * @param lambda the regularization parameter.
    * @param cost the computed cost for this gradient update.
    * @return the gradient vector that should be substracted from the weights and
    *         the updated cost.
    */
   public CostGradientTuple computeGradient(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost);
+      DoubleVector gradient, double learningRate, long iteration, double cost);
 
 }

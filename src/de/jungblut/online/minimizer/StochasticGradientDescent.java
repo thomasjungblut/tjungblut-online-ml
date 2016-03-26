@@ -3,6 +3,7 @@ package de.jungblut.online.minimizer;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
@@ -37,7 +39,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     private final double alpha;
     private double breakDifference;
     private double momentum;
-    private double lambda;
     private int historySize = 10;
     private int progressReportInterval = 1;
     private double holdoutValidationPercentage = 0d;
@@ -93,17 +94,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     public StochasticGradientDescentBuilder weightUpdater(
         WeightUpdater weightUpdater) {
       this.weightUpdater = Preconditions.checkNotNull(weightUpdater);
-      return this;
-    }
-
-    /**
-     * Sets the regularization parameter "lambda".
-     * 
-     * @param lambda the amount to regularize with.
-     * @return the builder again.
-     */
-    public StochasticGradientDescentBuilder lambda(double lambda) {
-      this.lambda = lambda;
       return this;
     }
 
@@ -182,7 +172,6 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private double breakDifference;
   private double momentum;
   private double initialAlpha;
-  private double lambda;
   private double validationPercentage;
   private int historySize;
   private int progressReportInterval;
@@ -199,6 +188,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private boolean adaptiveLearningRate = false;
   private long iteration = 0;
   private long allIterations = 0;
+  private Stopwatch startWatch;
 
   private StochasticGradientDescent(StochasticGradientDescentBuilder builder) {
     this.builder = builder;
@@ -210,10 +200,9 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     this.alpha = this.initialAlpha;
     this.breakDifference = builder.breakDifference;
     this.momentum = builder.momentum;
-    this.historySize = builder.historySize;
     this.progressReportInterval = builder.progressReportInterval;
+    this.historySize = builder.historySize;
     this.weightUpdater = builder.weightUpdater;
-    this.lambda = builder.lambda;
     this.validationPercentage = builder.holdoutValidationPercentage;
     this.adaptiveLearningRate = builder.adaptiveLearningRate;
     this.history = new LinkedList<>();
@@ -227,6 +216,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     resetState(builder);
     theta = start;
 
+    startWatch = Stopwatch.createStarted();
     for (int pass = 0; pass < numPasses; pass++) {
 
       iteration = 0;
@@ -239,9 +229,14 @@ public class StochasticGradientDescent implements StochasticMinimizer {
           verbose));
 
       if (verbose) {
-        LOG.info("Pass " + pass + " | Iteration " + iteration
-            + " | Validation Cost: " + validationError
-            / Math.max(validationItems, 1));
+        LOG.info(String
+            .format(
+                "Pass Summary %d | Iteration %d | Validation Cost: %g | Iterations/s: %g  | Total Time Taken: %s",
+                pass,
+                iteration,
+                allIterations
+                    / (double) Math.max(startWatch.elapsed(TimeUnit.SECONDS), 1),
+                validationError / Math.max(validationItems, 1), startWatch));
       }
 
       if (passCallback != null) {
@@ -271,17 +266,24 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     try {
       readLock.lock();
       observed = costFunction.observeExample(next, theta);
-      if (verbose) {
-        double avgImprovement = getAverageImprovement(history);
-        if (iteration % progressReportInterval == 0) {
-          LOG.info("Pass " + pass + " | Iteration " + iteration
-              + " | Validation Cost: " + validationError
-              / Math.max(validationItems, 1) + " | Last Cost: "
-              + observed.getCost() + " | Avg Improvement: " + avgImprovement);
-        }
-      }
     } finally {
       readLock.unlock();
+    }
+
+    if (verbose) {
+      double avgImprovement = getAverageImprovement(history);
+      if (iteration % progressReportInterval == 0) {
+        LOG.info(String
+            .format(
+                "Pass %d | Iteration %d | Validation Cost: %g | Last Cost: %g | Avg Improvement: %g | Iterations/s: %g",
+                pass,
+                iteration,
+                validationError / Math.max(validationItems, 1),
+                observed.getCost(),
+                avgImprovement,
+                allIterations
+                    / (double) Math.max(startWatch.elapsed(TimeUnit.SECONDS), 1)));
+      }
     }
 
     // TODO this write lock is huge, can it be broken down more?
@@ -352,11 +354,8 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   }
 
   public CostWeightTuple updateWeights(CostGradientTuple observed) {
-    // compute the final weight update
-    CostWeightTuple update = weightUpdater.computeNewWeights(theta,
-        observed.getGradient(), alpha, allIterations, lambda,
-        observed.getCost());
-    return update;
+    return weightUpdater.computeNewWeights(theta, observed.getGradient(),
+        alpha, allIterations, observed.getCost());
   }
 
   public void setIterationCallback(IterationFinishedCallback iterationCallback) {

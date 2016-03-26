@@ -39,8 +39,7 @@ public class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
 
   @Override
   public CostWeightTuple computeNewWeights(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost) {
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
 
     if (squaredPreviousGradient == null) {
       squaredPreviousGradient = new SparseDoubleVector(theta.getDimension());

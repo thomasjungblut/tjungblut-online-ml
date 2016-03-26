@@ -64,7 +64,7 @@ public class TestRegressionLearner {
 
     // for both classes
     for (int i = 0; i <= 1; i++) {
-      gridGradCheck(learner, i, new L2Regularizer());
+      gridGradCheck(learner, i, new L2Regularizer(1d));
     }
   }
 
@@ -82,7 +82,7 @@ public class TestRegressionLearner {
             CostGradientTuple tmpGrad = learner.observeExample(
                 new FeatureOutcomePair(nextFeature, nextOutcome), x);
             CostGradientTuple tmpUpdatedGradient = updater.computeGradient(x,
-                tmpGrad.getGradient(), 1d, 0, 1d, tmpGrad.getCost());
+                tmpGrad.getGradient(), 1d, 0, tmpGrad.getCost());
 
             return new CostGradientTuple(tmpUpdatedGradient.getCost(), null);
           });
@@ -91,7 +91,7 @@ public class TestRegressionLearner {
           new FeatureOutcomePair(nextFeature, nextOutcome), weights);
       // we compute the new weights (to test regularization gradients)
       CostGradientTuple updatedGradient = updater.computeGradient(weights,
-          realGrad.getGradient(), 1d, 0, 1d, realGrad.getCost());
+          realGrad.getGradient(), 1d, 0, realGrad.getCost());
 
       Assert.assertArrayEquals(numGrad.toArray(), updatedGradient.getGradient()
           .toArray(), 1e-4);
@@ -113,7 +113,7 @@ public class TestRegressionLearner {
   public void testPerceptron() {
     List<FeatureOutcomePair> data = generateData();
 
-    RegressionLearner learner = newRegularizedLearner(0d,
+    RegressionLearner learner = newRegularizedLearner(
         new GradientDescentUpdater(), new StepActivationFunction(0.5),
         new StepLoss());
 
@@ -148,7 +148,7 @@ public class TestRegressionLearner {
   public void testRidgeLogisticRegression() {
     List<FeatureOutcomePair> data = generateData();
 
-    RegressionLearner learner = newRegularizedLearner(1d, new L2Regularizer());
+    RegressionLearner learner = newRegularizedLearner(new L2Regularizer(1d));
 
     RegressionModel model = learner.train(() -> data.stream());
     double acc = computeClassificationAccuracy(generateData(), model);
@@ -159,7 +159,7 @@ public class TestRegressionLearner {
   public void testLassoLogisticRegression() {
     List<FeatureOutcomePair> data = generateDataAddedNoise(2);
 
-    RegressionLearner learner = newRegularizedLearner(1d, new L1Regularizer());
+    RegressionLearner learner = newRegularizedLearner(new L1Regularizer(1d));
 
     RegressionModel model = learner.train(() -> data.stream());
     // basically the l1 norm should set the noise to zero
@@ -182,22 +182,21 @@ public class TestRegressionLearner {
   }
 
   public RegressionLearner newLearner() {
-    return newRegularizedLearner(0d, new GradientDescentUpdater());
+    return newRegularizedLearner(new GradientDescentUpdater());
   }
 
-  public RegressionLearner newRegularizedLearner(double lambda,
-      WeightUpdater updater) {
-    return newRegularizedLearner(lambda, updater,
-        new SigmoidActivationFunction(), new LogLoss());
+  public RegressionLearner newRegularizedLearner(WeightUpdater updater) {
+    return newRegularizedLearner(updater, new SigmoidActivationFunction(),
+        new LogLoss());
   }
 
-  public RegressionLearner newRegularizedLearner(double lambda,
-      WeightUpdater updater, ActivationFunction activationFunction,
-      LossFunction loss) {
+  public RegressionLearner newRegularizedLearner(WeightUpdater updater,
+      ActivationFunction activationFunction, LossFunction loss) {
     StochasticGradientDescentBuilder builder = StochasticGradientDescentBuilder
         .create(0.1);
-    if (lambda != 0d) {
-      builder = builder.lambda(lambda).weightUpdater(updater);
+
+    if (updater != null) {
+      builder = builder.weightUpdater(updater);
     }
     StochasticGradientDescent min = builder.build();
     RegressionLearner learner = new RegressionLearner(min, activationFunction,

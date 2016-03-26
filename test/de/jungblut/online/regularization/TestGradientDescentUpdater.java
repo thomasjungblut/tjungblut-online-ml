@@ -16,7 +16,7 @@ public class TestGradientDescentUpdater {
     DoubleVector grad = new DenseDoubleVector(new double[] { 1d, 1d, 1d });
     double learningRate = 0.1d;
     CostWeightTuple update = updater.computeNewWeights(theta, grad,
-        learningRate, 1, 0d, 1d);
+        learningRate, 1, 1d);
 
     Assert.assertArrayEquals(theta.subtract(grad.multiply(learningRate))
         .toArray(), update.getWeight().toArray(), 1e-8);

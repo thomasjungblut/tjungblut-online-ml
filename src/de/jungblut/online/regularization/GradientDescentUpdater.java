@@ -10,11 +10,10 @@ public class GradientDescentUpdater implements WeightUpdater {
    */
   @Override
   public CostWeightTuple computeNewWeights(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost) {
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
 
     CostGradientTuple computedGradient = computeGradient(theta, gradient,
-        learningRate, iteration, lambda, cost);
+        learningRate, iteration, cost);
 
     DoubleVector dampened = computedGradient.getGradient().multiply(
         learningRate);
@@ -25,8 +24,7 @@ public class GradientDescentUpdater implements WeightUpdater {
 
   @Override
   public CostGradientTuple computeGradient(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost) {
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
     return new CostGradientTuple(cost, gradient);
   }
 

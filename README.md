@@ -17,7 +17,8 @@ Supported Algorithms
 - [x] Stochastic Gradient Descent 
  - [x] Logistic regression
  - [x] Linear regression (least squares)
- - [x] Multinomial regression
+ - [x] Multinomial regression (one vs. all)
+ - [ ] MaxEnt regression using cross entropy
  - [ ] MaxEnt Markov Models
  - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
@@ -62,7 +63,7 @@ The StochasticGradientDescent class makes use of parallel streams, so if you wan
 
 > -Djava.util.concurrent.ForkJoinPool.common.parallelism=30
 
-to whatever maximizes your throughput in updates per s.
+to whatever maximizes your throughput in updates per second.
 
 
 Do Predictions
@@ -111,10 +112,9 @@ Here we use the data from the [digit recognizer kaggle competetion](http://www.k
     IntFunction<RegressionLearner> factory = (i) -> {
     	  // take care of not sharing any state from the outside, since classes are trained in parallel
         StochasticGradientDescent minimizer = StochasticGradientDescentBuilder
-        .create(0.1)
+        .create(0.01)
         .holdoutValidationPercentage(0.1d)
-        .lambda(0.2)
-        .weightUpdater(new L2Regularizer())
+        .weightUpdater(new L2Regularizer(0.1))
         .progressReportInterval(1_000_000)
         .build();
       RegressionLearner learner = new RegressionLearner(minimizer,
@@ -133,6 +133,21 @@ Here we use the data from the [digit recognizer kaggle competetion](http://www.k
     
 ```
 
+The accuracy and confusion matrix on a test set looks like this:
+
+```
+ 31280 /  42000 acc: 0.7447619047619047
+ 3680    5  111  110   19  187  152   23   95   42 <-   744   17%	 0
+    6 4553  212  254  127  157   52  187  544  137 <-  1676   27%	 1
+   53   37 2916  344   53   46  182   33   54   17 <-   819   22%	 2
+   31   11  328 3052   77  447   24  208  378   82 <-  1586   34%	 3
+   65   15  121   66 3249  402   46  168   84  675 <-  1642   34%	 4
+  130   28   67  195  104 1957  107    1  323   17 <-   972   33%	 5
+   71   14  181   48   60   91 3511    3   29    2 <-   499   12%	 6
+   27    7   74  119   22   86    0 3481   38  698 <-  1071   24%	 7
+   59   11  143   88   57  271   45    4 2438   75 <-   753   24%	 8
+   10    3   24   75  304  151   18  293   80 2443 <-   958   28%	 9
+```
 
 License
 -------

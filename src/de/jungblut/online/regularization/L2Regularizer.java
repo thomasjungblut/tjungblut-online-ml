@@ -13,17 +13,22 @@ import de.jungblut.math.minimize.CostGradientTuple;
  */
 public class L2Regularizer extends GradientDescentUpdater {
 
+  private final double l2;
+
+  public L2Regularizer(double l2) {
+    this.l2 = l2;
+  }
+
   @Override
   public CostGradientTuple computeGradient(DoubleVector weights,
-      DoubleVector gradient, double learningRate, long iteration,
-      double lambda, double cost) {
-    if (lambda != 0d) {
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
+    if (l2 != 0d) {
       DoubleVector powered = weights.pow(2d);
-      DoubleVector regGrad = weights.multiply(lambda);
+      DoubleVector regGrad = weights.multiply(l2);
       // assume bias is on the first dimension
       powered.set(0, 0);
       regGrad.set(0, 0);
-      cost += lambda * powered.sum() / 2d;
+      cost += l2 * powered.sum() / 2d;
       gradient = gradient.add(regGrad);
     }
     return new CostGradientTuple(cost, gradient);
