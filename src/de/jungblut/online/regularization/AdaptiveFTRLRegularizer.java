@@ -15,7 +15,7 @@ import de.jungblut.math.sparse.SparseDoubleVector;
  * @author thomas.jungblut
  *
  */
-public class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
+public final class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
 
   private final double beta;
   private final double l1;
@@ -59,15 +59,16 @@ public class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
         theta.set(index, 0);
       } else {
         double value = (sign * l1 - zi)
-            / ((beta + FastMath.sqrt(ni) / learningRate + l2));
+            / ((beta + FastMath.sqrt(ni)) / learningRate + l2);
         theta.set(index, value);
       }
 
       // update our cached copies
       double sigma = (FastMath.sqrt(ni + gradientValue * gradientValue) - FastMath
           .sqrt(ni)) / learningRate;
-      perCoordinateWeights.set(index, gradientValue - sigma * theta.get(index));
-      squaredPreviousGradient.set(index, gradientValue * gradientValue);
+      perCoordinateWeights.set(index,
+          zi + gradientValue - sigma * theta.get(index));
+      squaredPreviousGradient.set(index, ni + gradientValue * gradientValue);
     }
 
     return new CostWeightTuple(cost, theta);

@@ -19,7 +19,7 @@ import de.jungblut.math.DoubleVector.DoubleVectorElement;
  * regularization is applied after the gradient step. This is known to result in
  * better sparsity of the intermediate solution.
  */
-public class L1Regularizer extends GradientDescentUpdater {
+public final class L1Regularizer extends GradientDescentUpdater {
 
   private final double tol;
   private final double l1;

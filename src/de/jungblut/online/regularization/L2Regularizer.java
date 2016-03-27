@@ -11,7 +11,7 @@ import de.jungblut.math.minimize.CostGradientTuple;
  * @author thomas.jungblut
  *
  */
-public class L2Regularizer extends GradientDescentUpdater {
+public final class L2Regularizer extends GradientDescentUpdater {
 
   private final double l2;
 
