@@ -234,9 +234,10 @@ public class StochasticGradientDescent implements StochasticMinimizer {
                 "Pass Summary %d | Iteration %d | Validation Cost: %g | Iterations/s: %g  | Total Time Taken: %s",
                 pass,
                 iteration,
+                validationError / Math.max(validationItems, 1),
                 allIterations
                     / (double) Math.max(startWatch.elapsed(TimeUnit.SECONDS), 1),
-                validationError / Math.max(validationItems, 1), startWatch));
+                startWatch));
       }
 
       if (passCallback != null) {
