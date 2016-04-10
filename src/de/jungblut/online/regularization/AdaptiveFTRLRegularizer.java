@@ -6,7 +6,8 @@ import org.apache.commons.math3.util.FastMath;
 
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.DoubleVector.DoubleVectorElement;
-import de.jungblut.math.sparse.SparseDoubleVector;
+import de.jungblut.math.minimize.CostGradientTuple;
+import de.jungblut.online.ml.FeatureOutcomePair;
 
 /**
  * Based on the paper:
@@ -15,7 +16,7 @@ import de.jungblut.math.sparse.SparseDoubleVector;
  * @author thomas.jungblut
  *
  */
-public final class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
+public final class AdaptiveFTRLRegularizer implements WeightUpdater {
 
   private final double beta;
   private final double l1;
@@ -38,31 +39,48 @@ public final class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
   }
 
   @Override
-  public CostWeightTuple computeNewWeights(DoubleVector theta,
-      DoubleVector gradient, double learningRate, long iteration, double cost) {
+  public DoubleVector prePredictionWeightUpdate(
+      FeatureOutcomePair featureOutcome, DoubleVector theta,
+      double learningRate, long iteration) {
 
     if (squaredPreviousGradient == null) {
-      squaredPreviousGradient = new SparseDoubleVector(theta.getDimension());
-      perCoordinateWeights = new SparseDoubleVector(theta.getDimension());
+      // initialize zeroed vectors of the same type as the weights
+      squaredPreviousGradient = theta.deepCopy().multiply(0);
+      perCoordinateWeights = theta.deepCopy().multiply(0);
     }
+
+    Iterator<DoubleVectorElement> iterateNonZero = featureOutcome.getFeature()
+        .iterateNonZero();
+    while (iterateNonZero.hasNext()) {
+      DoubleVectorElement next = iterateNonZero.next();
+      double gradientValue = next.getValue();
+      int index = next.getIndex();
+
+      double zi = perCoordinateWeights.get(index);
+      double ni = squaredPreviousGradient.get(index);
+      if (FastMath.abs(zi) <= l1) {
+        theta.set(index, 0);
+      } else {
+        double value = -1d / (((beta + FastMath.sqrt(ni)) / learningRate) + l2);
+        value = value * (zi - FastMath.signum(gradientValue) * l1);
+        theta.set(index, value);
+      }
+    }
+
+    return theta;
+  }
+
+  @Override
+  public CostWeightTuple computeNewWeights(DoubleVector theta,
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
 
     Iterator<DoubleVectorElement> iterateNonZero = gradient.iterateNonZero();
     while (iterateNonZero.hasNext()) {
       DoubleVectorElement next = iterateNonZero.next();
       double gradientValue = next.getValue();
       int index = next.getIndex();
-      double sign = FastMath.signum(gradientValue);
-
       double zi = perCoordinateWeights.get(index);
       double ni = squaredPreviousGradient.get(index);
-      if (sign * zi <= l1) {
-        theta.set(index, 0);
-      } else {
-        double value = (sign * l1 - zi)
-            / ((beta + FastMath.sqrt(ni)) / learningRate + l2);
-        theta.set(index, value);
-      }
-
       // update our cached copies
       double sigma = (FastMath.sqrt(ni + gradientValue * gradientValue) - FastMath
           .sqrt(ni)) / learningRate;
@@ -70,7 +88,13 @@ public final class AdaptiveFTRLRegularizer extends GradientDescentUpdater {
           zi + gradientValue - sigma * theta.get(index));
       squaredPreviousGradient.set(index, ni + gradientValue * gradientValue);
     }
-
     return new CostWeightTuple(cost, theta);
   }
+
+  @Override
+  public CostGradientTuple updateGradient(DoubleVector theta,
+      DoubleVector gradient, double learningRate, long iteration, double cost) {
+    return null;
+  }
+
 }

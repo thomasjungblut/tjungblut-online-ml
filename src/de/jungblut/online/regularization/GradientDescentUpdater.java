@@ -2,6 +2,7 @@ package de.jungblut.online.regularization;
 
 import de.jungblut.math.DoubleVector;
 import de.jungblut.math.minimize.CostGradientTuple;
+import de.jungblut.online.ml.FeatureOutcomePair;
 
 public class GradientDescentUpdater implements WeightUpdater {
 
@@ -12,20 +13,25 @@ public class GradientDescentUpdater implements WeightUpdater {
   public CostWeightTuple computeNewWeights(DoubleVector theta,
       DoubleVector gradient, double learningRate, long iteration, double cost) {
 
-    CostGradientTuple computedGradient = computeGradient(theta, gradient,
+    CostGradientTuple gradientTuple = updateGradient(theta, gradient,
         learningRate, iteration, cost);
 
-    DoubleVector dampened = computedGradient.getGradient().multiply(
-        learningRate);
+    DoubleVector dampened = gradientTuple.getGradient().multiply(learningRate);
+    DoubleVector newWeights = theta.subtract(dampened);
 
-    return new CostWeightTuple(computedGradient.getCost(),
-        theta.subtract(dampened));
+    return new CostWeightTuple(gradientTuple.getCost(), newWeights);
   }
 
   @Override
-  public CostGradientTuple computeGradient(DoubleVector theta,
+  public CostGradientTuple updateGradient(DoubleVector theta,
       DoubleVector gradient, double learningRate, long iteration, double cost) {
     return new CostGradientTuple(cost, gradient);
   }
 
+  @Override
+  public DoubleVector prePredictionWeightUpdate(
+      FeatureOutcomePair featureOutcome, DoubleVector theta,
+      double learningRate, long iteration) {
+    return theta;
+  }
 }

@@ -77,11 +77,17 @@ public abstract class AbstractMinimizingOnlineLearner<M extends Model> extends
     if (sparseWeights) {
       return new SequentialSparseDoubleVector(dimension);
     } else {
-      double[] array = new double[dimension];
-      for (int i = 0; i < array.length; i++) {
-        array[i] = (random.nextDouble() * 2) - 1d;
+      // if the dimension is too big, we don't want to waste time on generating
+      // randoms
+      if (dimension < (2 << 15)) {
+        double[] array = new double[dimension];
+        for (int i = 0; i < array.length; i++) {
+          array[i] = (random.nextDouble() * 2) - 1d;
+        }
+        return new DenseDoubleVector(array);
       }
-      return new DenseDoubleVector(array);
+
+      return new DenseDoubleVector(dimension);
     }
   }
 

@@ -14,7 +14,7 @@ Supported Algorithms
 
 - [x] Multinomial Naive Bayes
  - [ ] Complement Naive Bayes
-- [x] Stochastic Gradient Descent 
+- [x] Stochastic Gradient Descent
  - [x] Logistic regression
  - [x] Linear regression (least squares)
  - [x] Multinomial regression (one vs. all)
@@ -99,16 +99,152 @@ try (DataInputStream dis = new DataInputStream(new FileInputStream("/tmp/model.b
 // take dis
 ```
 
+
+Avazu Click-Through Rate Prediction
+-------------------------------------
+
+A prime example to use this streaming library for is to do CTR predictions. Below code takes the data from the [Avazu CTR prediction challenge on kaggle](https://www.kaggle.com/c/avazu-ctr-prediction/).
+It is using simple feature hashing and FTRL logistic regression.
+
+```java
+
+	public class AvazuCtrPrediction {
+
+	  private static final int NUM_COLUMNS = 24;
+	  private static final int SPARSE_HASH_DIMENSION = 2 << 24;
+	  private static final Pattern SPLITTER = Pattern.compile(",");
+	  private static final int BUFFER_SIZE = 1024 * 1024 * 5;
+	  private static final String TRAINING_SET_PATH = "/home/user/datasets/ctr/train.gz";
+
+	  private static final SingleEntryDoubleVector POSITIVE_CLASS //
+	  = new SingleEntryDoubleVector(1d);
+	  private static final SingleEntryDoubleVector NEGATIVE_CLASS //
+	  = new SingleEntryDoubleVector(0d);
+
+	  private static FeatureOutcomePair parseFeature(String line, String[] header) {
+
+	    final int shift = 2;
+	    String[] split = SPLITTER.split(line);
+	    Preconditions.checkArgument(split.length == NUM_COLUMNS,
+	        "line doesn't match expected size");
+
+	    // turn the date into the hour
+	    split[2] = split[2].substring(6);
+
+	    // prepare the tokens for feature hashing
+	    String[] tokens = new String[split.length - shift];
+	    for (int i = 0; i < tokens.length; i++) {
+	      tokens[i] = header[i + shift] + "_" + split[i + shift];
+	    }
+
+	    // hash them with 128 bit murmur3
+	    DoubleVector feature = VectorizerUtils.sparseHashVectorize(tokens, Hashing
+	        .murmur3_128(), () -> new SequentialSparseDoubleVector(
+	        SPARSE_HASH_DIMENSION));
+
+	    // fix the first element to be the bias
+	    feature.set(0, 1d);
+
+	    return new FeatureOutcomePair(feature,
+	        split[1].equals("0") ? NEGATIVE_CLASS : POSITIVE_CLASS);
+	  }
+
+	  private static Stream<FeatureOutcomePair> setupStream() {
+	    try {
+	      @SuppressWarnings("resource")
+	      BufferedReader reader = new BufferedReader(new InputStreamReader(
+	          new GZIPInputStream(new FileInputStream(TRAINING_SET_PATH),
+	              BUFFER_SIZE), Charset.defaultCharset()));
+
+	      // consume the header first
+	      final String[] header = SPLITTER.split(reader.readLine());
+	      // yield the stream for everything that comes after
+	      return reader.lines().map((s) -> parseFeature(s, header));
+	    } catch (IOException e) {
+	      throw new RuntimeException(e);
+	    }
+	  }
+
+	  public static void main(String[] args) throws IOException {
+
+	    StochasticGradientDescent sgd = StochasticGradientDescentBuilder
+	        .create(0.01) // learning rate
+	        .holdoutValidationPercentage(0.05d) // 5% as validation set
+	        .historySize(10_000) // keep 10k samples to compute relative improvement
+	        .weightUpdater(new AdaptiveFTRLRegularizer(1, 1, 1)) // FTRL updater
+	        .progressReportInterval(1_000_000) // report every n iterations
+	        .build();
+
+	    // simple regression with Sigmoid and LogLoss
+	    RegressionLearner learner = new RegressionLearner(sgd,
+	        new SigmoidActivationFunction(), new LogLoss());
+
+	    // you are able to trade speed with memory usage!
+	    // using sparse weights should use roughly 400mb, vs. 3gb of dense weights.
+	    // however, dense weights are 10x faster in this case.
+	    // learner.useSparseWeights();
+
+	    // do two full passes over the data
+	    learner.setNumPasses(2);
+	    learner.verbose();
+
+	    Stopwatch sw = Stopwatch.createStarted();
+
+	    // train the model
+	    RegressionModel model = learner.train(() -> setupStream());
+
+	    // output the weights
+	    model.getWeights().iterateNonZero().forEachRemaining(System.out::println);
+
+	    System.out.println("Time taken: " + sw.toString());
+
+	  }
+
+	}
+
+```
+
+You should see similar output to the one below (verbosity omitted):
+
+```
+	Pass 0 | Iteration 1000000 | Validation Cost: 0.392678 | Training Cost: 0.414122 | Avg Improvement: -5.06327e-07 | Iterations/s: 83333.3
+	Pass 0 | Iteration 2000000 | Validation Cost: 0.393216 | Training Cost: 0.414562 | Avg Improvement: -2.78664e-08 | Iterations/s: 90909.1
+	---
+	Pass 0 | Iteration 37000000 | Validation Cost: 0.399904 | Training Cost: 0.421891 | Avg Improvement: -4.10581e-09 | Iterations/s: 93434.3
+	Pass 0 | Iteration 38000000 | Validation Cost: 0.400473 | Training Cost: 0.422624 | Avg Improvement: 1.80911e-08 | Iterations/s: 93596.1
+	Pass Summary 0 | Iteration 38406639 | Validation Cost: 0.400674 | Training Cost: 0.422823 | Iterations/s: 93446.8  | Total Time Taken: 6.854 min
+	Pass 1 | Iteration 1000000 | Validation Cost: 0.377576 | Training Cost: 0.403000 | Avg Improvement: -4.86178e-07 | Iterations/s: 93602.5
+	Pass 1 | Iteration 2000000 | Validation Cost: 0.380972 | Training Cost: 0.404703 | Avg Improvement: 6.00240e-09 | Iterations/s: 93533.9
+	---
+	Pass 1 | Iteration 37000000 | Validation Cost: 0.395585 | Training Cost: 0.417894 | Avg Improvement: -5.88841e-09 | Iterations/s: 94023.2
+	Pass 1 | Iteration 38000000 | Validation Cost: 0.396356 | Training Cost: 0.418665 | Avg Improvement: 2.13002e-08 | Iterations/s: 93981.1
+	Pass Summary 1 | Iteration 38406798 | Validation Cost: 0.396473 | Training Cost: 0.418885 | Iterations/s: 94018.9  | Total Time Taken: 13.63 min
+
+	0 -> -0.2179566321842441
+	19 -> -0.008019816916453593
+	40 -> 0.011372162311553732
+	72 -> 0.009959662995812498
+	75 -> 0.01552960872382698
+	91 -> 0.01122045025790969
+	114 -> -0.058862175500113786
+	---
+	33554352 -> -0.013848560325345247
+	33554353 -> -7.612543688230045E-4
+	33554422 -> -0.003704587068022832
+	Time taken: 13.94 min
+```
+
+
 MNIST Multinomial Logistic Regression
 -------------------------------------
 
-A very simply code example for training the multinomial logistic regression is on the MNIST dataset. 
+A very simply code example for training the multinomial logistic regression is on the MNIST dataset.
 Here we use the data from the [digit recognizer kaggle competetion](http://www.kaggle.com/c/digit-recognizer).
 
 ```java
 
     Dataset trainingSet = MNISTReader.readMNISTTrainImages("/home/user/datasets/mnist/kaggle/train.csv");
-   
+
     IntFunction<RegressionLearner> factory = (i) -> {
     	  // take care of not sharing any state from the outside, since classes are trained in parallel
         StochasticGradientDescent minimizer = StochasticGradientDescentBuilder
@@ -130,7 +266,7 @@ Here we use the data from the [digit recognizer kaggle competetion](http://www.k
     MultinomialRegressionModel model = learner.train(() -> trainingSet.asStream());
     MultinomialRegressionClassifier clf = new MultinomialRegressionClassifier(model);    
     // do some classifications
-    
+
 ```
 
 The accuracy and confusion matrix on a test set looks like this:
@@ -152,7 +288,7 @@ The accuracy and confusion matrix on a test set looks like this:
 License
 -------
 
-Since I am Apache committer, I consider everything inside of this repository 
+Since I am Apache committer, I consider everything inside of this repository
 licensed by Apache 2.0 license, although I haven't put the usual header into the source files.
 
 If something is not licensed via Apache 2.0, there is a reference or an additional licence header included in the specific source file.
@@ -176,7 +312,7 @@ Build
 You will need Java 8 to build this library.
 
 You can simply build with:
- 
+
 > mvn clean package install
 
 The created jars contains debuggable code + sources + javadocs.

@@ -178,12 +178,13 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private WeightUpdater weightUpdater;
   private StampedLock lock = new StampedLock();
 
-  private Deque<Double> history;
+  private Deque<Double> costHistory;
   private DoubleVector lastTheta = null;
   private DoubleVector theta;
   private double alpha;
   private int validationItems;
   private double validationError;
+  private double trainingError;
   private boolean stopAfterThisPass = false;
   private boolean adaptiveLearningRate = false;
   private long iteration = 0;
@@ -205,7 +206,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     this.weightUpdater = builder.weightUpdater;
     this.validationPercentage = builder.holdoutValidationPercentage;
     this.adaptiveLearningRate = builder.adaptiveLearningRate;
-    this.history = new LinkedList<>();
+    this.costHistory = new LinkedList<>();
   }
 
   @Override
@@ -220,21 +221,28 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     for (int pass = 0; pass < numPasses; pass++) {
 
       iteration = 0;
+      trainingError = 0;
       validationError = 0;
       validationItems = 0;
 
       Stream<FeatureOutcomePair> currentStream = streamSupplier.get();
       final int passFinal = pass;
-      currentStream.forEach((next) -> doStep(passFinal, next, costFunction,
-          verbose));
+      if (currentStream.isParallel()) {
+        currentStream.forEach((next) -> doStepLocked(passFinal, next,
+            costFunction, verbose));
+      } else {
+        currentStream.forEach((next) -> doStep(passFinal, next, costFunction,
+            verbose));
+      }
 
       if (verbose) {
         LOG.info(String
             .format(
-                "Pass Summary %d | Iteration %d | Validation Cost: %g | Iterations/s: %g  | Total Time Taken: %s",
+                "Pass Summary %d | Iteration %d | Validation Cost: %g | Training Cost: %g | Iterations/s: %g  | Total Time Taken: %s",
                 pass,
                 iteration,
                 validationError / Math.max(validationItems, 1),
+                trainingError / Math.max(iteration - validationItems, 1),
                 allIterations
                     / (double) Math.max(startWatch.elapsed(TimeUnit.SECONDS), 1),
                 startWatch));
@@ -259,89 +267,94 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     return theta;
   }
 
+  // TODO this write lock is huge, can it be broken down more?
+  private void doStepLocked(int pass, FeatureOutcomePair next,
+      StochasticCostFunction costFunction, boolean verbose) {
+    Lock writeLock = lock.asWriteLock();
+    try {
+      writeLock.lock();
+      doStep(pass, next, costFunction, verbose);
+    } finally {
+      writeLock.unlock();
+    }
+  }
+
   private void doStep(int pass, FeatureOutcomePair next,
       StochasticCostFunction costFunction, boolean verbose) {
 
-    CostGradientTuple observed = null;
-    Lock readLock = lock.asReadLock();
-    try {
-      readLock.lock();
-      observed = costFunction.observeExample(next, theta);
-    } finally {
-      readLock.unlock();
-    }
+    DoubleVector iterationLocalTheta = Preconditions.checkNotNull(weightUpdater
+        .prePredictionWeightUpdate(next, theta, alpha, allIterations),
+        "weight updater #prePredictionWeightUpdate return must be non-null!");
+
+    CostGradientTuple observed = costFunction.observeExample(next,
+        iterationLocalTheta);
 
     if (verbose) {
-      double avgImprovement = getAverageImprovement(history);
-      if (iteration % progressReportInterval == 0) {
+      double avgImprovement = getAverageImprovement(costHistory);
+      if (iteration > 0 && iteration % progressReportInterval == 0) {
         LOG.info(String
             .format(
-                "Pass %d | Iteration %d | Validation Cost: %g | Last Cost: %g | Avg Improvement: %g | Iterations/s: %g",
+                "Pass %d | Iteration %d | Validation Cost: %g | Training Cost: %g | Avg Improvement: %g | Iterations/s: %g",
                 pass,
                 iteration,
                 validationError / Math.max(validationItems, 1),
-                observed.getCost(),
+                trainingError / Math.max(iteration - validationItems, 1),
                 avgImprovement,
                 allIterations
                     / (double) Math.max(startWatch.elapsed(TimeUnit.SECONDS), 1)));
       }
     }
 
-    // TODO this write lock is huge, can it be broken down more?
-    // TODO I've seen huge amounts of contention between threads on this lock
+    dropOldValues(costHistory);
 
-    // do the updates
-    Lock asWriteLock = lock.asWriteLock();
-    try {
-      asWriteLock.lock();
-      dropOldValues(history);
-
-      boolean validation = false;
-      if (validationPercentage > 0 && rand.nextDouble() < validationPercentage) {
+    boolean validation = false;
+    if (validationPercentage > 0) {
+      if (rand.nextDouble() < validationPercentage) {
         validationError += observed.getCost();
         validationItems++;
         // update the history
-        history.addLast(validationError / Math.max(validationItems, 1));
+        costHistory.addLast(validationError / Math.max(validationItems, 1));
         validation = true;
 
         if (validationCallback != null) {
           validationCallback.onValidationFinished(pass, iteration,
-              observed.getCost(), theta, next);
+              observed.getCost(), iterationLocalTheta, next);
         }
       }
+    } else {
+      costHistory.addLast(observed.getCost() / Math.max(iteration, 1));
+    }
 
-      if (iterationCallback != null) {
-        iterationCallback.onIterationFinished(pass, iteration,
-            observed.getCost(), theta, validation);
-      }
+    if (iterationCallback != null) {
+      iterationCallback.onIterationFinished(pass, iteration,
+          observed.getCost(), iterationLocalTheta, validation);
+    }
 
-      if (validation) {
-        // return to not update the parameters when we did a validation step
-        return;
-      }
+    if (validation) {
+      // return to not update the parameters when we did a validation step
+      return;
+    }
 
-      CostWeightTuple update = updateWeights(observed);
+    trainingError += observed.getCost();
 
-      // save our last parameter
-      lastTheta = theta;
-      theta = update.getWeight();
+    CostWeightTuple update = updateWeights(iterationLocalTheta, observed);
 
-      computeMomentum();
+    // save our last parameter
+    lastTheta = iterationLocalTheta;
+    theta = update.getWeight();
 
-      // break if we converged below the limit
-      if (converged(history, breakDifference)) {
-        stopAfterThisPass = true;
-      }
+    computeMomentum();
 
-      allIterations++;
-      iteration++;
+    // break if we converged below the limit
+    if (converged(costHistory, breakDifference)) {
+      stopAfterThisPass = true;
+    }
 
-      if (adaptiveLearningRate) {
-        alpha = 1d / (initialAlpha * (allIterations + 2));
-      }
+    allIterations++;
+    iteration++;
 
-    } finally {
-      asWriteLock.unlock();
+    if (adaptiveLearningRate) {
+      alpha = 1d / (initialAlpha * (allIterations + 2));
     }
   }
 
@@ -354,9 +367,10 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     }
   }
 
-  public CostWeightTuple updateWeights(CostGradientTuple observed) {
-    return weightUpdater.computeNewWeights(theta, observed.getGradient(),
-        alpha, allIterations, observed.getCost());
+  public CostWeightTuple updateWeights(DoubleVector iterationLocalTheta,
+      CostGradientTuple observed) {
+    return weightUpdater.computeNewWeights(iterationLocalTheta,
+        observed.getGradient(), alpha, allIterations, observed.getCost());
   }
 
   public void setIterationCallback(IterationFinishedCallback iterationCallback) {

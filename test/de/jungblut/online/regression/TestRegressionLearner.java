@@ -81,7 +81,7 @@ public class TestRegressionLearner {
           (x) -> {
             CostGradientTuple tmpGrad = learner.observeExample(
                 new FeatureOutcomePair(nextFeature, nextOutcome), x);
-            CostGradientTuple tmpUpdatedGradient = updater.computeGradient(x,
+            CostGradientTuple tmpUpdatedGradient = updater.updateGradient(x,
                 tmpGrad.getGradient(), 1d, 0, tmpGrad.getCost());
 
             return new CostGradientTuple(tmpUpdatedGradient.getCost(), null);
@@ -90,7 +90,7 @@ public class TestRegressionLearner {
       CostGradientTuple realGrad = learner.observeExample(
           new FeatureOutcomePair(nextFeature, nextOutcome), weights);
       // we compute the new weights (to test regularization gradients)
-      CostGradientTuple updatedGradient = updater.computeGradient(weights,
+      CostGradientTuple updatedGradient = updater.updateGradient(weights,
           realGrad.getGradient(), 1d, 0, realGrad.getCost());
 
       Assert.assertArrayEquals(numGrad.toArray(), updatedGradient.getGradient()

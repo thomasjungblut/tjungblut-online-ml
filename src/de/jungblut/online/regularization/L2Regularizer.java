@@ -20,7 +20,7 @@ public final class L2Regularizer extends GradientDescentUpdater {
   }
 
   @Override
-  public CostGradientTuple computeGradient(DoubleVector weights,
+  public CostGradientTuple updateGradient(DoubleVector weights,
       DoubleVector gradient, double learningRate, long iteration, double cost) {
     if (l2 != 0d) {
       DoubleVector powered = weights.pow(2d);

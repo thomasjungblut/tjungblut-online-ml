@@ -46,7 +46,7 @@ public class AdamUpdater extends GradientDescentUpdater {
   }
 
   @Override
-  public CostGradientTuple computeGradient(DoubleVector theta,
+  public CostGradientTuple updateGradient(DoubleVector theta,
       DoubleVector gradient, double learningRate, long iteration, double cost) {
 
     if (movingAvg == null) {
