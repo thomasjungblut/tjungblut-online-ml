@@ -13,25 +13,20 @@ Supported Algorithms
 ===================
 
 - [x] Multinomial Naive Bayes
- - [ ] Complement Naive Bayes
 - [x] Stochastic Gradient Descent
  - [x] Logistic regression
  - [x] Linear regression (least squares)
  - [x] Multinomial regression (one vs. all)
- - [ ] MaxEnt regression using cross entropy
- - [ ] MaxEnt Markov Models
+ - [x] Maximum Margin (hinge loss)
  - [x] Lasso (l1 norm)
  - [x] Ridge Regression (l2 norm)
- - [x] FTRL
- - [x] SVM (Hinge Loss)
- - [x] Perceptron
- - [ ] CG Support
- - [ ] Adagrad
-- [ ] Multilayer Perceptron
-- [ ] RBM
-- [ ] KNN
-- [ ] Canopy Clustering
-- [ ] Markov Chain
+ - [x] FTRL-Proximal
+ - [x] Adam
+ - [ ] CG
+ - [ ] Sample-based Adaptive Learning Rates
+ - [ ] Shuffled input streams
+ - [ ] Multilayer Perceptron
+- [ ] Graphite Bindings
 
 Sample Usage
 ===================
@@ -208,15 +203,11 @@ You should see similar output to the one below (verbosity omitted):
 
 ```
 Pass 0 | Iteration 1000000 | Validation Cost: 0.392678 | Training Cost: 0.414122 | Avg Improvement: -5.06327e-07 | Iterations/s: 83333.3
-Pass 0 | Iteration 2000000 | Validation Cost: 0.393216 | Training Cost: 0.414562 | Avg Improvement: -2.78664e-08 | Iterations/s: 90909.1
 ---
-Pass 0 | Iteration 37000000 | Validation Cost: 0.399904 | Training Cost: 0.421891 | Avg Improvement: -4.10581e-09 | Iterations/s: 93434.3
 Pass 0 | Iteration 38000000 | Validation Cost: 0.400473 | Training Cost: 0.422624 | Avg Improvement: 1.80911e-08 | Iterations/s: 93596.1
 Pass Summary 0 | Iteration 38406639 | Validation Cost: 0.400674 | Training Cost: 0.422823 | Iterations/s: 93446.8  | Total Time Taken: 6.854 min
 Pass 1 | Iteration 1000000 | Validation Cost: 0.377576 | Training Cost: 0.403000 | Avg Improvement: -4.86178e-07 | Iterations/s: 93602.5
-Pass 1 | Iteration 2000000 | Validation Cost: 0.380972 | Training Cost: 0.404703 | Avg Improvement: 6.00240e-09 | Iterations/s: 93533.9
 ---
-Pass 1 | Iteration 37000000 | Validation Cost: 0.395585 | Training Cost: 0.417894 | Avg Improvement: -5.88841e-09 | Iterations/s: 94023.2
 Pass 1 | Iteration 38000000 | Validation Cost: 0.396356 | Training Cost: 0.418665 | Avg Improvement: 2.13002e-08 | Iterations/s: 93981.1
 Pass Summary 1 | Iteration 38406798 | Validation Cost: 0.396473 | Training Cost: 0.418885 | Iterations/s: 94018.9  | Total Time Taken: 13.63 min
 
@@ -233,6 +224,7 @@ Pass Summary 1 | Iteration 38406798 | Validation Cost: 0.396473 | Training Cost:
 33554422 -> -0.003704587068022832
 Time taken: 13.94 min
 ```
+
 
 
 MNIST Multinomial Logistic Regression
