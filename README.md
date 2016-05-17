@@ -294,7 +294,7 @@ If you use maven, you can get the latest release using the following dependency:
  <dependency>
      <groupId>de.jungblut.ml</groupId>
      <artifactId>tjungblut-online-ml</artifactId>
-     <version>0.4</version>
+     <version>0.5</version>
  </dependency>
 ```
 
