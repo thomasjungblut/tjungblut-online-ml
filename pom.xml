@@ -6,7 +6,7 @@
 	<name>tjungblut-online-machine-learning</name>
 	<description>This is my online machine learning library.</description>
 	<url>https://github.com/thomasjungblut/tjungblut-online-ml</url>
-	<version>0.4-SNAPSHOT</version>
+	<version>0.3-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<prerequisites>
 		<maven>3.0</maven>
