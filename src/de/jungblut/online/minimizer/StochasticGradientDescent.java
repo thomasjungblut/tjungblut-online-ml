@@ -44,6 +44,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     private double holdoutValidationPercentage = 0d;
     private boolean adaptiveLearningRate = false;
     private WeightUpdater weightUpdater = new GradientDescentUpdater();
+    private long validationRandomSeed = System.currentTimeMillis();
 
     private StochasticGradientDescentBuilder(double alpha) {
       this.alpha = alpha;
@@ -63,6 +64,18 @@ public class StochasticGradientDescent implements StochasticMinimizer {
       Preconditions.checkArgument(momentum >= 0d && momentum <= 1d,
           "Momentum must be between 0 and 1.");
       this.momentum = momentum;
+      return this;
+    }
+
+    /**
+     * In order to fix the reproducibility of a given train/test set split, you
+     * can pass the seed value.
+     * 
+     * @param seed the seed as passed into {@link java.util.Random}.
+     * @return the builder again.
+     */
+    public StochasticGradientDescentBuilder validationRandomSeed(long seed) {
+      this.validationRandomSeed = seed;
       return this;
     }
 
@@ -162,8 +175,8 @@ public class StochasticGradientDescent implements StochasticMinimizer {
 
   }
 
-  private final Random rand = new Random();
   private final StochasticGradientDescentBuilder builder;
+  private final long validationSeed;
 
   private IterationFinishedCallback iterationCallback;
   private ValidationFinishedCallback validationCallback;
@@ -178,6 +191,9 @@ public class StochasticGradientDescent implements StochasticMinimizer {
   private WeightUpdater weightUpdater;
   private StampedLock lock = new StampedLock();
 
+  // we are fixing the random for validation to generate the same sequences
+  // to not mix train and validation set.
+  private Random validationRandom;
   private Deque<Double> costHistory;
   private DoubleVector lastTheta = null;
   private DoubleVector theta;
@@ -193,6 +209,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
 
   private StochasticGradientDescent(StochasticGradientDescentBuilder builder) {
     this.builder = builder;
+    this.validationSeed = builder.validationRandomSeed;
     resetState(builder);
   }
 
@@ -220,6 +237,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
     startWatch = Stopwatch.createStarted();
     for (int pass = 0; pass < numPasses; pass++) {
 
+      validationRandom = new Random(validationSeed);
       iteration = 0;
       trainingError = 0;
       validationError = 0;
@@ -309,7 +327,7 @@ public class StochasticGradientDescent implements StochasticMinimizer {
 
     boolean validation = false;
     if (validationPercentage > 0) {
-      if (rand.nextDouble() < validationPercentage) {
+      if (validationRandom.nextDouble() < validationPercentage) {
         validationError += observed.getCost();
         validationItems++;
         // update the history
